@@ -1,0 +1,26 @@
+<?xml version="1.0" ?>
+
+<container xmlns="http://symfony.com/schema/dic/services"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+    
+    <parameters>
+        <parameter key="theapi_cctvblindfold.device_detector.class">Theapi\CctvBlindfoldBundle\DeviceDetector</parameter>
+        <parameter key="theapi_cctvblindfold.process.class">Symfony\Component\Process\Process</parameter>
+    </parameters>
+
+    <services>
+    
+        <service id="theapi_cctvblindfold.process" class="%theapi_cctvblindfold.process.class%" public="false">
+            <argument>null</argument>
+        </service>
+    
+        <service id="theapi_cctvblindfold.device_detector" class="%theapi_cctvblindfold.device_detector.class%">
+            <argument>%theapi_cctvblindfold.devices%</argument>
+            <argument type="service" id="theapi_cctvblindfold.process" />
+        </service>
+        
+    </services>
+    
+</container>
