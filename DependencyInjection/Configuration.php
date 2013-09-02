@@ -19,7 +19,7 @@ class Configuration implements ConfigurationInterface
     {
 
         $treeBuilder = new TreeBuilder();
-        $rootNode = $treeBuilder->root('theapi_cctvblindfold');
+        $rootNode = $treeBuilder->root('theapi_cctv_blindfold');
 
         $rootNode
             ->children()

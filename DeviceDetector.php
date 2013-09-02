@@ -10,9 +10,9 @@ class DeviceDetector
 {
 
   /**
-   * The configuration array
+   * The devices to scan
    */
-  protected $config;
+  protected $devices;
 
   /**
    * The OutputInterface object
@@ -27,8 +27,15 @@ class DeviceDetector
   /**
    * Constructor
    */
-  public function __construct($config, $process) {
-    $this->config = $config;
+  public function __construct($devices, $process) {
+
+    try {
+      $this->validateDevices();
+    } catch (\Exception $e) {
+      throw $e;
+    }
+
+    $this->devices = $devices;
     $this->process = $process;
   }
 
@@ -58,7 +65,8 @@ class DeviceDetector
    * @return string
    */
   public function scan() {
-    $cmd = 'nmap -sP 192.168.0.* 2>&1';
+
+    $cmd = 'nmap -sP ' . $this->devices . ' 2>&1';
 
     $this->process->setCommandLine($cmd);
     $this->process->run();
@@ -88,5 +96,14 @@ class DeviceDetector
 
     return true;
   }
+
+  protected function validateDevices() {
+    // @todo
+    // currently expects space seperated ip address
+    //
+    // theapi_cctv_blindfold:
+    //     devices: 192.168.0.112 192.168.0.118
+  }
+
 
 }
