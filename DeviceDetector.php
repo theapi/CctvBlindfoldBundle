@@ -15,6 +15,11 @@ class DeviceDetector
   protected $devices;
 
   /**
+   * Devices that have been detected
+   */
+  protected $detected;
+
+  /**
    * The OutputInterface object
    */
   protected $output;
@@ -28,15 +33,16 @@ class DeviceDetector
    * Constructor
    */
   public function __construct($devices, $process) {
+    $this->devices = $devices;
+    $this->process = $process;
+    $this->found = array();
 
     try {
       $this->validateDevices();
-    } catch (\Exception $e) {
+    } catch (\InvalidArgumentException $e) {
       throw $e;
     }
 
-    $this->devices = $devices;
-    $this->process = $process;
   }
 
   public function setOutput(OutputInterface $output) {
@@ -45,17 +51,33 @@ class DeviceDetector
 
   /**
    * Detect the the devices of interest.
+   *
+   * @return bool
    */
   public function detect() {
     // are the phones on the network...
     $str = $this->scan();
-
     $present = $this->analyseScan($str);
+    if (!$present) {
+      // repeat in a few seconds because the phones take a while to respond initially...
+      sleep(10);
+      $str = $this->scan();
+      $present = $this->analyseScan($str);
+    }
 
-    // @todo: repeat in 30 seconds because the phones take a while to responde initially...
+    if (!empty($this->output)) {
+      if ($present) {
+        $out = 'Detected:';
+        foreach ($this->detected as $detected) {
+          $out .= ' <info>' . $detected . '</info>';
+        }
+      } else {
+        $out = 'Devices: <info>' . $this->devices . '</info> not found';
+      }
+      $this->output->writeln($out);
+    }
 
-
-
+    return $present;
   }
 
   /**
@@ -84,26 +106,47 @@ class DeviceDetector
    */
   public function analyseScan($str) {
 
-    // for now just output to screen
-    if (!empty($this->output)) {
+    // output results if verbose (app/console -v cctvbf:detect)
+    if (!empty($this->output) && $this->output->getVerbosity() > 1) {
       $this->output->writeln($str);
     }
 
-    // @todo: analyse...
-    // look for the device ip address (or name):
-    // Nmap scan report for android-xxxxxxx.example.com (192.168.0.118)
+    if (strstr($str, '(0 hosts up)')) {
+      // no devices found
+      return false;
+    }
 
+    // Note which ones were found
+    $devices = explode(' ', $this->devices);
+
+    foreach ($devices as $ip) {
+      if (strstr($str, '(' . $ip . ')')) {
+        $this->detected[] = $ip;
+      }
+    }
 
     return true;
   }
 
   protected function validateDevices() {
-    // @todo
-    // currently expects space seperated ip address
+    // Expects space seperated ip addresses.
     //
     // theapi_cctv_blindfold:
     //     devices: 192.168.0.112 192.168.0.118
-  }
+    $devices = explode(' ', $this->devices);
+    $ips = array();
+    foreach ($devices as $ip) {
+      if ($valid = filter_var($ip, FILTER_VALIDATE_IP)) {
+        $ips[] = $valid;
+      }
+    }
 
+    if (empty($ips)) {
+      $this->devices = null;
+      throw new \InvalidArgumentException('No valid ip addresses provided for theapi_cctv_blindfold:devices');
+    }
+
+    $this->devices = join(' ', $ips);
+  }
 
 }

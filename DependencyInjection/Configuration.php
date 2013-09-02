@@ -23,7 +23,7 @@ class Configuration implements ConfigurationInterface
 
         $rootNode
             ->children()
-                ->scalarNode('devices')->defaultValue('all')->end()
+                ->scalarNode('devices')->end()
              ->end()
         ;
 
