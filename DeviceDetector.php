@@ -1,6 +1,10 @@
 <?php
 namespace Theapi\CctvBlindfoldBundle;
 
+use Doctrine\ORM\EntityManager;
+
+use Theapi\CctvBlindfoldBundle\Entity\Detection;
+
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -49,6 +53,10 @@ class DeviceDetector
     $this->output = $output;
   }
 
+  public function setEntityManager(EntityManager $em) {
+    $this->em = $em;
+  }
+
   /**
    * Detect the the devices of interest.
    *
@@ -71,10 +79,22 @@ class DeviceDetector
         foreach ($this->detected as $detected) {
           $out .= ' <info>' . $detected . '</info>';
         }
+        $devices = join(' ', $this->detected);
       } else {
         $out = 'Devices: <info>' . $this->devices . '</info> not found';
+        $devices = '';
       }
       $this->output->writeln($out);
+    }
+
+    // TMP store in db
+    if (isset($this->em)) {
+      $detection = new Detection();
+      $detection->setTimestamp(new \DateTime());
+      $detection->setDevices($devices);
+
+      $this->em->persist($detection);
+      $this->em->flush();
     }
 
     return $present;
