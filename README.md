@@ -10,7 +10,7 @@ Requires:
  - Cctv camera
 
 Ultimately, the CctvBundle files should be downloaded to the
-`vendor/theapi/cctvbundle/Theapi/CctvBlindfoldBundle` directory.
+`vendor/theapi/cctvblindfoldbundle/Theapi/CctvBlindfoldBundle` directory.
 
 **Using composer**
 
@@ -34,7 +34,7 @@ public function registerBundles()
 {
     $bundles = array(
         // ...
-        new Theapi\CctvBundle\TheapiCctvBlindfoldBundle(),
+        new Theapi\CctvBlindfoldBundle\TheapiCctvBlindfoldBundle(),
     );
 }
 
