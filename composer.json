@@ -2,7 +2,7 @@
     "name": "theapi/cctvblindfoldbundle",
     "type": "symfony-bundle",
     "description": "An over engineered switch for a cctv camera using a Raspberry pi",
-    "keywords":     ["CCTV", "Swann", "raspberry pi", "Symfony2"],
+    "keywords":     ["CCTV", "Swann", "raspberry pi", "Symfony2", "GPIO", "Stepper motor"],
     "homepage":     "https://github.com/theapi/CctvBlindfoldBundle",
     "license": "MIT",
     "authors":      [
@@ -12,7 +12,8 @@
     ],
 
     "require": {
-        "php": ">=5.3.0"
+        "php": ">=5.3.0",
+        "ronanguilloux/php-gpio": "dev-master"
     },
     
     "autoload": {
