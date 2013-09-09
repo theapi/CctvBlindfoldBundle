@@ -27,7 +27,11 @@ class DetectCommand extends ContainerAwareCommand
 
       $deviceDetector = $container->get('theapi_cctvblindfold.device_detector');
       $deviceDetector->setOutput($output);
-      $deviceDetector->detect();
+      if ($deviceDetector->detect()) {
+          $command = $this->getApplication()->find('cctvbf:stepper:demo');
+          //$input = new ArrayInput(array('command' => 'images'));
+          $returnCode = $command->run($input, $output);
+      }
     }
 
 }

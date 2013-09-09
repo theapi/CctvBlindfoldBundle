@@ -11,37 +11,106 @@ use Symfony\Component\Console\Output\OutputInterface;
 class Stepper
 {
 
-  /**
-   * The gpio handling class
-   */
-  protected $gpio;
+    /**
+     * The gpio handling class
+     */
+    protected $gpio;
 
-  /**
-   * The OutputInterface object
-   */
-  protected $output;
+    /**
+     * The gpio pins to use to control the stepper.
+     * BCM pin naming
+     * @var array
+     */
+    protected $control_pins = array(24,25,8,7);
 
-  /**
-   * A Symfony\Component\Process object
-   */
-  protected $process;
+    /**
+     * The stepping sequence
+     * @var array
+     */
+    protected $seq;
 
-  /**
-   * Constructor
-   */
-  public function __construct($process) {
-    $this->process = $process;
+    /**
+     * The number of steps to perform.
+     * 512 is a full turn
+     * @var int
+     */
+    protected $steps = 80;
 
-    $this->gpio = new GPIO(); // @todo: dependency inject
-  }
+    /**
+     * The OutputInterface object
+     */
+    protected $output;
 
-  public function setOutput(OutputInterface $output) {
-    $this->output = $output;
-  }
+    /**
+     * A Symfony\Component\Process object
+     */
+    protected $process;
 
-  // @todo: convert this to work with less than php 5.4
-  public function demo() {
-      $gpio = $this->gpio; // @todo: remove this
+    /**
+     * Constructor
+     */
+    public function __construct($process) {
+        $this->process = $process;
+
+        $this->gpio = new GPIO(); // @todo: dependency inject
+    }
+
+    public function setOutput(OutputInterface $output) {
+        $this->output = $output;
+    }
+
+    public function open() {
+        $this->setupPins();
+        foreach (range(0, $this->steps) as $i) {
+            foreach (range(7, 0) as $halfstep) {
+                foreach (range(0, 3) as $pin) {
+                    $this->gpio->output($this->control_pins[$pin], $this->seq[$halfstep][$pin]);
+                }
+                usleep(100);
+            }
+        }
+    }
+
+    public function close() {
+        $this->setupPins();
+        foreach (range(0, $this->steps) as $i) {
+            foreach (range(0, 7) as $halfstep) {
+                foreach (range(0, 3) as $pin) {
+                    $this->gpio->output($this->control_pins[$pin], $this->seq[$halfstep][$pin]);
+                }
+                usleep(100);
+            }
+        }
+    }
+
+    protected function setupPins() {
+
+        $this->setSeq();
+
+        // Initiate the pins
+        foreach ($this->control_pins as $pin) {
+            $this->gpio->setup($pin, "out");
+            $this->gpio->output($pin, 0);
+        }
+    }
+
+    /**
+     * The stepping sequence.
+     */
+    protected function setSeq() {
+        // halfstep
+        $this->seq = [ [1,0,0,0],
+                       [1,1,0,0],
+                       [0,1,0,0],
+                       [0,1,1,0],
+                       [0,0,1,0],
+                       [0,0,1,1],
+                       [0,0,0,1],
+                       [1,0,0,1] ];
+    }
+
+    public function demo() {
+      $gpio = $this->gpio;
 
       // BCM pin naming
       $control_pin = [24,25,8,7];
@@ -93,6 +162,6 @@ class Stepper
       $gpio->unexportAll();
 
 
-  }
+    }
 
 }

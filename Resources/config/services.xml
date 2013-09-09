@@ -6,6 +6,7 @@
 
     
     <parameters>
+        <parameter key="theapi_cctvblindfold.blindfold.class">Theapi\CctvBlindfoldBundle\Blindfold</parameter>
         <parameter key="theapi_cctvblindfold.device_detector.class">Theapi\CctvBlindfoldBundle\DeviceDetector</parameter>
         <parameter key="theapi_cctvblindfold.stepper.class">Theapi\CctvBlindfoldBundle\Stepper</parameter>
         <parameter key="theapi_cctvblindfold.process.class">Symfony\Component\Process\Process</parameter>
@@ -27,6 +28,10 @@
         
         <service id="theapi_cctvblindfold.stepper" class="%theapi_cctvblindfold.stepper.class%">
             <argument type="service" id="theapi_cctvblindfold.process" />
+        </service>
+        
+        <service id="theapi_cctvblindfold.blindfold" class="%theapi_cctvblindfold.blindfold.class%">
+            <argument type="service" id="theapi_cctvblindfold.stepper" />
         </service>
         
     </services>

@@ -93,8 +93,12 @@ class DeviceDetector
       $detection->setTimestamp(new \DateTime());
       $detection->setDevices($devices);
 
-      $this->em->persist($detection);
-      $this->em->flush();
+      try {
+        $this->em->persist($detection);
+        $this->em->flush();
+      } catch (\PDOException $e) {
+          // ignore for now
+      }
     }
 
     return $present;
