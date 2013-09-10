@@ -82,6 +82,7 @@ class Stepper
                 foreach ($this->control_pins as $i => $pin) {
                     $this->gpio->output($pin, $this->seq[$halfstep][$i]);
                 }
+                usleep(100);
             }
         }
 
@@ -94,6 +95,8 @@ class Stepper
     }
 
     public function open() {
+        $this->rotate(-80);
+        /*
         $this->setupPins();
         foreach (range(0, $this->steps) as $i) {
             foreach (range(7, 0) as $halfstep) {
@@ -103,9 +106,12 @@ class Stepper
                 usleep(100);
             }
         }
+        */
     }
 
     public function close() {
+        $this->rotate(80);
+        /*
         $this->setupPins();
         foreach (range(0, $this->steps) as $i) {
             foreach (range(0, 7) as $halfstep) {
@@ -115,6 +121,7 @@ class Stepper
                 usleep(100);
             }
         }
+        */
     }
 
     protected function setupPins() {
@@ -126,6 +133,12 @@ class Stepper
     }
 
     public function demo() {
+        $this->open();
+        sleep(2);
+        $this->close();
+
+
+        /*
       $gpio = $this->gpio;
 
       $control_pin = $this->control_pins;
@@ -168,7 +181,7 @@ class Stepper
           $gpio->output($pin, 0);
       }
       $gpio->unexportAll();
-
+      */
 
     }
 
