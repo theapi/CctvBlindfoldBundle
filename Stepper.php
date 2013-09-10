@@ -24,10 +24,20 @@ class Stepper
     protected $control_pins = array(24,25,8,7);
 
     /**
-     * The stepping sequence
+     * The stepping sequence, halfstep
      * @var array
      */
-    protected $seq;
+    protected $seq = array(
+        array (1,0,0,0),
+        array (1,1,0,0),
+        array (0,1,0,0),
+        array (0,1,1,0),
+        array (0,0,1,0),
+        array (0,0,1,1),
+        array (0,0,0,1),
+        array (1,0,0,1),
+    );
+
 
     /**
      * The number of steps to perform.
@@ -59,6 +69,30 @@ class Stepper
         $this->output = $output;
     }
 
+    public function rotate($steps) {
+        $this->setupPins();
+
+        $seq = $this->seq;
+        if ($steps < 0) {
+            $seq = array_reverse($seq);
+        }
+
+        for ($x = 0; $x < $steps; $x++) {
+            foreach ($this->seq as $halfstep) {
+                foreach ($this->control_pins as $i => $pin) {
+                    $this->gpio->output($pin, $this->seq[$halfstep][$i]);
+                }
+            }
+        }
+
+        // GPIO.cleanup()
+        foreach ($this->control_pins as $pin) {
+            $this->gpio->output($pin, 0);
+        }
+        $this->gpio->unexportAll();
+
+    }
+
     public function open() {
         $this->setupPins();
         foreach (range(0, $this->steps) as $i) {
@@ -84,29 +118,11 @@ class Stepper
     }
 
     protected function setupPins() {
-
-        $this->setSeq();
-
         // Initiate the pins
         foreach ($this->control_pins as $pin) {
             $this->gpio->setup($pin, "out");
             $this->gpio->output($pin, 0);
         }
-    }
-
-    /**
-     * The stepping sequence.
-     */
-    protected function setSeq() {
-        // halfstep
-        $this->seq = [ [1,0,0,0],
-                       [1,1,0,0],
-                       [0,1,0,0],
-                       [0,1,1,0],
-                       [0,0,1,0],
-                       [0,0,1,1],
-                       [0,0,0,1],
-                       [1,0,0,1] ];
     }
 
     public function demo() {
