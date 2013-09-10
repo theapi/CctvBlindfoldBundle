@@ -75,15 +75,18 @@ class Stepper
     {
         $this->setupPins();
 
-        $seq = $this->seq;
+        // @todo make this less pythony
+        $range_start = 0;
+        $range_end = 7;
         if ($steps < 0) {
-            $seq = array_reverse($seq);
+            $range_start = 7;
+            $range_end = 0;
         }
 
-        for ($x = 0; $x < $steps; $x++) {
-            foreach ($this->seq as $halfstep) {
-                foreach ($this->control_pins as $i => $pin) {
-                    $this->gpio->output($pin, $this->seq[$halfstep][$i]);
+        foreach (range(0, $this->steps) as $i) {
+            foreach (range($range_start, $range_end) as $halfstep) {
+                foreach (range(0, 3) as $pin) {
+                    $this->gpio->output($this->control_pins[$pin], $this->seq[$halfstep][$pin]);
                 }
                 usleep(100);
             }
