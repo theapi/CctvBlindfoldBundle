@@ -83,7 +83,7 @@ class Stepper
             $range_end = 0;
         }
 
-        foreach (range(0, $this->steps) as $i) {
+        foreach (range(0, $steps) as $i) {
             foreach (range($range_start, $range_end) as $halfstep) {
                 foreach (range(0, 3) as $pin) {
                     $this->gpio->output($this->control_pins[$pin], $this->seq[$halfstep][$pin]);

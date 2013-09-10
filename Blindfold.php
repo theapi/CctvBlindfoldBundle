@@ -90,6 +90,11 @@ class Blindfold
     */
     public function getState()
     {
+        if (file_exists('/tmp/cctvbf_state')) {
+            $this->state = self::OPEN;
+        } else {
+            $this->state = self::CLOSED;
+        }
         return $this->state;
     }
 
@@ -99,8 +104,12 @@ class Blindfold
     public function setState($state)
     {
         if ($state == self::CLOSED) {
+            if (file_exists('/tmp/cctvbf_state')) {
+                unlink('/tmp/cctvbf_state');
+            }
             $this->state = self::CLOSED;
         } elseif ($state == self::CLOSED) {
+            touch('/tmp/cctvbf_state');
             $this->state = self::OPEN;
         }
     }
