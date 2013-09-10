@@ -59,17 +59,20 @@ class Stepper
     /**
      * Constructor
      */
-    public function __construct($process) {
+    public function __construct($process)
+    {
         $this->process = $process;
 
         $this->gpio = new GPIO(); // @todo: dependency inject
     }
 
-    public function setOutput(OutputInterface $output) {
+    public function setOutput(OutputInterface $output)
+    {
         $this->output = $output;
     }
 
-    public function rotate($steps) {
+    public function rotate($steps)
+    {
         $this->setupPins();
 
         $seq = $this->seq;
@@ -94,7 +97,8 @@ class Stepper
 
     }
 
-    public function open() {
+    public function open()
+    {
         $this->rotate(-80);
         /*
         $this->setupPins();
@@ -109,7 +113,8 @@ class Stepper
         */
     }
 
-    public function close() {
+    public function close()
+    {
         $this->rotate(80);
         /*
         $this->setupPins();
@@ -124,7 +129,8 @@ class Stepper
         */
     }
 
-    protected function setupPins() {
+    protected function setupPins()
+    {
         // Initiate the pins
         foreach ($this->control_pins as $pin) {
             $this->gpio->setup($pin, "out");
@@ -132,57 +138,10 @@ class Stepper
         }
     }
 
-    public function demo() {
+    public function demo()
+    {
         $this->open();
         sleep(2);
         $this->close();
-
-
-        /*
-      $gpio = $this->gpio;
-
-      $control_pin = $this->control_pins;
-
-      foreach ($control_pin as $pin) {
-          echo "Setting up pin $pin\n";
-          $gpio->setup($pin, "out");
-          $gpio->output($pin, 0);
-      }
-
-      $seq = $this->seq;
-
-      // start closed, so anticlockwise 1/4 turn
-      // 512 is full turn
-      $steps = 80;
-
-      foreach (range(0, $steps) as $i) {
-          foreach (range(7, 0) as $halfstep) {
-              foreach (range(0, 3) as $pin) {
-                  $gpio->output($control_pin[$pin], $seq[$halfstep][$pin]);
-              }
-              usleep(100);
-          }
-      }
-
-      sleep(2);
-
-      // now clockwise
-      foreach (range(0, $steps) as $i) {
-          foreach (range(0, 7) as $halfstep) {
-              foreach (range(0, 3) as $pin) {
-                  $gpio->output($control_pin[$pin], $seq[$halfstep][$pin]);
-              }
-              usleep(100);
-          }
-      }
-
-      // GPIO.cleanup()
-      foreach ($control_pin as $pin) {
-          $gpio->output($pin, 0);
-      }
-      $gpio->unexportAll();
-      */
-
     }
-
 }
