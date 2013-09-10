@@ -1,6 +1,7 @@
 <?php
 namespace Theapi\CctvBlindfoldBundle;
 
+use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Represents the movable cover over the camera lens.
@@ -24,11 +25,32 @@ class Blindfold
     protected $state = self::CLOSED;
 
     /**
+    * The OutputInterface object
+    */
+    protected $output;
+
+    /**
     * Constructor
     */
     public function __construct($driver) {
         $this->driver = $driver;
 
+    }
+
+    public function setOutput(OutputInterface $output) {
+        $this->output = $output;
+    }
+
+    public function toggle() {
+        if ($this->getState() == self::OPEN) {
+            $this->close();
+        } else {
+            $this->open();
+        }
+    }
+
+    public function rotate($amount = 80) {
+        $this->driver->rotate($amount);
     }
 
     /**
@@ -49,6 +71,10 @@ class Blindfold
             $this->driver->close();
             $this->setState(self::CLOSED);
         }
+    }
+
+    public function demo() {
+        $this->driver->demo();
     }
 
     /**

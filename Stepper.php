@@ -128,8 +128,7 @@ class Stepper
     public function demo() {
       $gpio = $this->gpio;
 
-      // BCM pin naming
-      $control_pin = [24,25,8,7];
+      $control_pin = $this->control_pins;
 
       foreach ($control_pin as $pin) {
           echo "Setting up pin $pin\n";
@@ -137,14 +136,7 @@ class Stepper
           $gpio->output($pin, 0);
       }
 
-      $seq = [ [1,0,0,0],
-              [1,1,0,0],
-              [0,1,0,0],
-              [0,1,1,0],
-              [0,0,1,0],
-              [0,0,1,1],
-              [0,0,0,1],
-              [1,0,0,1] ];
+      $seq = $this->seq;
 
       // start closed, so anticlockwise 1/4 turn
       // 512 is full turn
