@@ -32,16 +32,18 @@ class Blindfold
     /**
     * Constructor
     */
-    public function __construct($driver) {
+    public function __construct($driver)
+    {
         $this->driver = $driver;
-
     }
 
-    public function setOutput(OutputInterface $output) {
+    public function setOutput(OutputInterface $output)
+    {
         $this->output = $output;
     }
 
-    public function toggle() {
+    public function toggle()
+    {
         if ($this->getState() == self::OPEN) {
             $this->close();
         } else {
@@ -49,14 +51,16 @@ class Blindfold
         }
     }
 
-    public function rotate($amount = 80) {
+    public function rotate($amount = 80)
+    {
         $this->driver->rotate($amount);
     }
 
     /**
     * Ensure the blindfold is open.
     */
-    public function open() {
+    public function open()
+    {
         if ($this->getState() != self::OPEN) {
             $this->driver->open();
             $this->setState(self::OPEN);
@@ -66,14 +70,16 @@ class Blindfold
     /**
     * Ensure the blindfold is closed.
     */
-    public function close() {
+    public function close()
+    {
         if ($this->getState() != self::CLOSED) {
             $this->driver->close();
             $this->setState(self::CLOSED);
         }
     }
 
-    public function demo() {
+    public function demo()
+    {
         $this->driver->demo();
     }
 
@@ -82,19 +88,20 @@ class Blindfold
     *
     * @return int
     */
-    public function getState() {
+    public function getState()
+    {
         return $this->state;
     }
 
     /**
     * Set the internal knowledge of the blindfold state.
     */
-    public function setState($state) {
+    public function setState($state)
+    {
         if ($state == self::CLOSED) {
-          $this->state = self::CLOSED;
-        } else if ($state == self::CLOSED) {
-          $this->state = self::OPEN;
+            $this->state = self::CLOSED;
+        } elseif ($state == self::CLOSED) {
+            $this->state = self::OPEN;
         }
     }
-
 }
