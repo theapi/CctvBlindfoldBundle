@@ -108,7 +108,7 @@ class Blindfold
                 unlink('/tmp/cctvbf_state');
             }
             $this->state = self::CLOSED;
-        } elseif ($state == self::CLOSED) {
+        } elseif ($state == self::OPEN) {
             touch('/tmp/cctvbf_state');
             $this->state = self::OPEN;
         }
