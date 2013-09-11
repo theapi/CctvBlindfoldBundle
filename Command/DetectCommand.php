@@ -1,13 +1,13 @@
 <?php
 namespace Theapi\CctvBlindfoldBundle\Command;
 
-use Theapi\CctvBlindfoldBundle\DeviceDetector,
-    Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand,
-    Symfony\Component\Console\Command\Command,
-    Symfony\Component\Console\Input\ArrayInput,
-    Symfony\Component\Console\Input,
-    Symfony\Component\Console\Input\InputInterface,
-    Symfony\Component\Console\Output\OutputInterface;
+use Theapi\CctvBlindfoldBundle\DeviceDetector;
+use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Input;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 
 class DetectCommand extends ContainerAwareCommand
 {

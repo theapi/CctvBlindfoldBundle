@@ -95,6 +95,7 @@ class Blindfold
         } else {
             $this->state = self::CLOSED;
         }
+
         return $this->state;
     }
 

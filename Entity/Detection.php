@@ -31,7 +31,7 @@ class Detection
     /**
      * Get id
      *
-     * @return integer 
+     * @return integer
      */
     public function getId()
     {
@@ -47,14 +47,14 @@ class Detection
     public function setTimestamp($timestamp)
     {
         $this->timestamp = $timestamp;
-    
+
         return $this;
     }
 
     /**
      * Get timestamp
      *
-     * @return \DateTime 
+     * @return \DateTime
      */
     public function getTimestamp()
     {
@@ -70,14 +70,14 @@ class Detection
     public function setDevices($devices)
     {
         $this->devices = $devices;
-    
+
         return $this;
     }
 
     /**
      * Get devices
      *
-     * @return string 
+     * @return string
      */
     public function getDevices()
     {
