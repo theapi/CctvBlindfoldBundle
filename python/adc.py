@@ -25,15 +25,15 @@ def broadcast_data (message):
 
 if __name__ == "__main__":
 	
-	signal.signal(signal.SIGINT, signal_handler)
-	#print 'Press Ctrl+C to exit'
-	
-	ADS1015 = 0x00  # 12-bit ADC
-	ADS1115 = 0x01  # 16-bit ADC
-	 
-	# Initialise the ADC using the default mode (use default I2C address)
-	# Set this to ADS1015 or ADS1115 depending on the ADC you are using!
-	adc = ADS1x15(ic=ADS1015)
+    signal.signal(signal.SIGINT, signal_handler)
+    #print 'Press Ctrl+C to exit'
+    
+    ADS1015 = 0x00  # 12-bit ADC
+    ADS1115 = 0x01  # 16-bit ADC
+     
+    # Initialise the ADC using the default mode (use default I2C address)
+    # Set this to ADS1015 or ADS1115 depending on the ADC you are using!
+    adc = ADS1x15(ic=ADS1015)
      
     # List to keep track of socket descriptors
     CONNECTION_LIST = []
@@ -49,49 +49,48 @@ if __name__ == "__main__":
     CONNECTION_LIST.append(server_socket)
 
 
+    while 1:
+      
+        # Read channel 0 in single-ended mode, +/-4.096V, 250sps
+        volts = adc.readADCSingleEnded(3, 1024, 860)
+        
+        # To read channel 3 in single-ended mode, +/- 1.024V, 860 sps use:
+        # volts = adc.readADCSingleEnded(3, 1024, 860)
 
-	while 1:
+        if volts > 0.5:
+          	#print "%.6f" % (volts)
+          	print volts
+          	broadcast_data(volts)
+
+		    #time.sleep(0.01)
 		
-		# Read channel 0 in single-ended mode, +/-4.096V, 250sps
-		volts = adc.readADCSingleEnded(3, 1024, 860)
-
-		# To read channel 3 in single-ended mode, +/- 1.024V, 860 sps use:
-		# volts = adc.readADCSingleEnded(3, 1024, 860)
-
-		if volts > 0.5:
-			#print "%.6f" % (volts)
-			print volts
-			broadcast_data(volts)
-
-		#time.sleep(0.01)
-		
-		# Get the list sockets which are ready to be read through select
-		read_sockets,write_sockets,error_sockets = select.select(CONNECTION_LIST,[],[],0.01)
+        # Get the list sockets which are ready to be read through select
+        read_sockets,write_sockets,error_sockets = select.select(CONNECTION_LIST,[],[],0.01)
 			
-		for sock in read_sockets:
-			#New connection
-			if sock == server_socket:
-				# Handle the case in which there is a new connection recieved through server_socket
-				sockfd, addr = server_socket.accept()
-				CONNECTION_LIST.append(sockfd)
-				print "Client (%s, %s) connected" % addr
-				 
-				#broadcast_data(sockfd, "%s:\n%s" % addr)
-			
-			#Some incoming message from a client
-			else:
-				# Data recieved from client, process it
-				try:
-					# In Windows, sometimes when a TCP program closes abruptly,
-					# a "Connection reset by peer" exception will be thrown
-					data = sock.recv(RECV_BUFFER)
-					# ignore it, this is broadcast only           
-				 
-				except:
-					print "Client (%s, %s) is offline" % addr
-					sock.close()
-					CONNECTION_LIST.remove(sock)
-					continue
+      	for sock in read_sockets:
+        		#New connection
+        		if sock == server_socket:
+          			# Handle the case in which there is a new connection recieved through server_socket
+          			sockfd, addr = server_socket.accept()
+          			CONNECTION_LIST.append(sockfd)
+          			print "Client (%s, %s) connected" % addr
+          			 
+          			#broadcast_data(sockfd, "%s:\n%s" % addr)
+        		
+        		#Some incoming message from a client
+        		else:
+          			# Data recieved from client, process it
+          			try:
+            				# In Windows, sometimes when a TCP program closes abruptly,
+            				# a "Connection reset by peer" exception will be thrown
+            				data = sock.recv(RECV_BUFFER)
+            				# ignore it, this is broadcast only           
+        			 
+          			except:
+            				print "Client (%s, %s) is offline" % addr
+            				sock.close()
+            				CONNECTION_LIST.remove(sock)
+            				continue
 			
 	server_socket.close()		
 			
