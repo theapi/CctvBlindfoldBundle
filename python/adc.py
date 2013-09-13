@@ -58,39 +58,39 @@ if __name__ == "__main__":
         # volts = adc.readADCSingleEnded(3, 1024, 860)
 
         if volts > 0.5:
-          	#print "%.6f" % (volts)
-          	print volts
-          	broadcast_data(volts)
+            #print "%.6f" % (volts)
+            print volts
+            broadcast_data(volts)
 
-		    #time.sleep(0.01)
+        #time.sleep(0.01)
 		
         # Get the list sockets which are ready to be read through select
         read_sockets,write_sockets,error_sockets = select.select(CONNECTION_LIST,[],[],0.01)
 			
       	for sock in read_sockets:
-        		#New connection
-        		if sock == server_socket:
-          			# Handle the case in which there is a new connection recieved through server_socket
-          			sockfd, addr = server_socket.accept()
-          			CONNECTION_LIST.append(sockfd)
-          			print "Client (%s, %s) connected" % addr
-          			 
-          			#broadcast_data(sockfd, "%s:\n%s" % addr)
+            #New connection
+            if sock == server_socket:
+                # Handle the case in which there is a new connection recieved through server_socket
+                sockfd, addr = server_socket.accept()
+                CONNECTION_LIST.append(sockfd)
+                print "Client (%s, %s) connected" % addr
+                 
+                #broadcast_data(sockfd, "%s:\n%s" % addr)
         		
-        		#Some incoming message from a client
-        		else:
-          			# Data recieved from client, process it
-          			try:
-            				# In Windows, sometimes when a TCP program closes abruptly,
-            				# a "Connection reset by peer" exception will be thrown
-            				data = sock.recv(RECV_BUFFER)
-            				# ignore it, this is broadcast only           
+            #Some incoming message from a client
+            else:
+                # Data recieved from client, process it
+                try:
+                    # In Windows, sometimes when a TCP program closes abruptly,
+                    # a "Connection reset by peer" exception will be thrown
+                    data = sock.recv(RECV_BUFFER)
+                    # ignore it, this is broadcast only           
         			 
-          			except:
-            				print "Client (%s, %s) is offline" % addr
-            				sock.close()
-            				CONNECTION_LIST.remove(sock)
-            				continue
+                except:
+                    print "Client (%s, %s) is offline" % addr
+                    sock.close()
+                    CONNECTION_LIST.remove(sock)
+                    continue
 			
 	server_socket.close()		
 			
