@@ -92,5 +92,5 @@ if __name__ == "__main__":
                     CONNECTION_LIST.remove(sock)
                     continue
 			
-	server_socket.close()		
+	#server_socket.close()		
 			
