@@ -24,6 +24,9 @@ class DaemonCommand extends ContainerAwareCommand
     {
         $container = $this->getContainer();
         $blindfold = $container->get('theapi_cctvblindfold.blindfold');
+        $blindfold->setOutput($output);
+
+
         $detectCommand = $this->getApplication()->find('cctvbf:detect');
         $input = new ArrayInput(array('command' => 'detect'));
         $lastDetect = 0;

@@ -5,6 +5,7 @@ use Symfony\Component\EventDispatcher\GenericEvent;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\DependencyInjection\ContainerAware;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Represents the movable cover over the camera lens.
@@ -48,16 +49,25 @@ class Blindfold extends ContainerAware
     public function __construct($driver)
     {
         $this->driver = $driver;
+
+        // bit rough & ready ATM Socket connect to the analogue to digital converter (adc.py)
+        $this->adcSocket = @stream_socket_client('tcp://localhost:8889', $errno, $errstr, 30);
+        if ($this->adcSocket) {
+          $this->readSockets[] = $this->adcSocket;
+        }
+    }
+
+    public function setContainer(ContainerInterface $container = null)
+    {
+        $this->container = $container;
+        $this->addListeners();
+    }
+
+    public function addListeners() {
         $this->eventDispatcher = $this->container->get('event_dispatcher');
         $this->eventDispatcher->addListener('device_detector.found', array($this, 'handleDeviceFound'));
         $this->eventDispatcher->addListener('device_detector.not_found', array($this, 'open'));
         $this->eventDispatcher->addListener('blindfold.stream_data', array($this, 'handleStreamData'));
-
-        // bit rough & ready ATM Socket connect to the analogue to digital converter (adc.py)
-        $this->adcSocket = stream_socket_client('tcp://localhost:8889', $errno, $errstr, 30);
-        if ($this->adcSocket) {
-          $this->readSockets[] = $this->adcSocket;
-        }
     }
 
     public function setOutput(OutputInterface $output)
@@ -81,7 +91,7 @@ class Blindfold extends ContainerAware
                     stream,
                     array('data' => $data)
                 );
-                $this->eventDispatcher('blindfold.stream_data', $event);
+                $this->eventDispatcher->dispatch('blindfold.stream_data', $event);
             }
         }
 
@@ -95,6 +105,7 @@ class Blindfold extends ContainerAware
     }
 
     public function handleDeviceFound() {
+        $this->output->writeln(__FUNCTION__); // tmp just to check event is being caught
         // currently just ensure closed
         // but in future it depends on other sensors in handleStreamData()
         $this->close();

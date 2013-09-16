@@ -25,6 +25,9 @@
             <call method="setEntityManager">
              <argument type="service" id="doctrine.orm.entity_manager" />
             </call>
+            <call method="setContainer">
+             <argument type="service" id="service_container" />
+            </call>
         </service>
         
         <service id="theapi_cctvblindfold.stepper" class="%theapi_cctvblindfold.stepper.class%">
@@ -33,6 +36,9 @@
         
         <service id="theapi_cctvblindfold.blindfold" class="%theapi_cctvblindfold.blindfold.class%">
             <argument type="service" id="theapi_cctvblindfold.stepper" />
+            <call method="setContainer">
+             <argument type="service" id="service_container" />
+            </call>
         </service>
         
     </services>

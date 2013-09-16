@@ -48,7 +48,7 @@ class DeviceDetector extends ContainerAware
     {
         $this->devices = $devices;
         $this->process = $process;
-        $this->eventDispatcher = $this->container->get('event_dispatcher');
+
         $this->found = array();
 
         try {
@@ -117,10 +117,11 @@ class DeviceDetector extends ContainerAware
         */
 
         // Tell all who care
+        $eventDispatcher = $this->container->get('event_dispatcher');
         if ($present) {
-          $this->eventDispatcher('device_detector.found');
+            $eventDispatcher->dispatch('device_detector.found');
         } else {
-          $this->eventDispatcher('device_detector.not_found');
+            $eventDispatcher->dispatch('device_detector.not_found');
         }
 
         return $present;
