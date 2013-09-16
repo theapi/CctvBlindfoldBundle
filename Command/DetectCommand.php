@@ -24,11 +24,13 @@ class DetectCommand extends ContainerAwareCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $container = $this->getContainer();
-        $command = $this->getApplication()->find('cctvbf:move');
+        //$command = $this->getApplication()->find('cctvbf:move');
 
         $deviceDetector = $container->get('theapi_cctvblindfold.device_detector');
         $deviceDetector->setOutput($output);
+        $deviceDetector->detect();
 
+        /*
         if ($deviceDetector->detect()) {
             // devices detected so ensure the blindfold is closed
             $input = new ArrayInput(
@@ -45,7 +47,8 @@ class DetectCommand extends ContainerAwareCommand
                 )
             );
         }
+        */
 
-        $returnCode = $command->run($input, $output);
+        //$returnCode = $command->run($input, $output);
     }
 }

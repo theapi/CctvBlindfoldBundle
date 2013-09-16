@@ -1,7 +1,9 @@
 <?php
 namespace Theapi\CctvBlindfoldBundle;
 
+
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Represents the movable cover over the camera lens.
@@ -19,6 +21,11 @@ class Blindfold
     protected $driver;
 
     /**
+     * The event dispatcher
+     */
+    protected $eventDispatcher;
+
+    /**
     * Whether the blindfold is currently open or closed.
     * @var int
     */
@@ -32,9 +39,12 @@ class Blindfold
     /**
     * Constructor
     */
-    public function __construct($driver)
+    public function __construct($driver, EventDispatcherInterface $eventDispatcher)
     {
         $this->driver = $driver;
+        $this->eventDispatcher = $eventDispatcher;
+        $this->eventDispatcher->addListener('device_detector.found', array($this, 'close'));
+        $this->eventDispatcher->addListener('device_detector.not_found', array($this, 'open'));
     }
 
     public function setOutput(OutputInterface $output)

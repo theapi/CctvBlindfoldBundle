@@ -6,6 +6,8 @@ use Doctrine\ORM\EntityManager;
 use Theapi\CctvBlindfoldBundle\Entity\Detection;
 
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+
 
 /**
  * Detect the precense of devices (mobile phones)
@@ -24,6 +26,11 @@ class DeviceDetector
     protected $detected;
 
     /**
+     * The event dispatcher
+     */
+    protected $eventDispatcher;
+
+    /**
     * The OutputInterface object
     */
     protected $output;
@@ -36,10 +43,11 @@ class DeviceDetector
     /**
     * Constructor
     */
-    public function __construct($devices, $process)
+    public function __construct($devices, $process, EventDispatcherInterface $eventDispatcher)
     {
         $this->devices = $devices;
         $this->process = $process;
+        $this->eventDispatcher = $eventDispatcher;
         $this->found = array();
 
         try {
@@ -92,6 +100,7 @@ class DeviceDetector
         }
 
         // TMP store in db
+        /*
         if (isset($this->em)) {
             $detection = new Detection();
             $detection->setTimestamp(new \DateTime());
@@ -103,6 +112,14 @@ class DeviceDetector
             } catch (\PDOException $e) {
                 // ignore for now
             }
+        }
+        */
+
+        // Tell all who care
+        if ($present) {
+          $this->eventDispatcher('device_detector.found');
+        } else {
+          $this->eventDispatcher('device_detector.not_found');
         }
 
         return $present;

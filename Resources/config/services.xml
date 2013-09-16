@@ -10,6 +10,7 @@
         <parameter key="theapi_cctvblindfold.device_detector.class">Theapi\CctvBlindfoldBundle\DeviceDetector</parameter>
         <parameter key="theapi_cctvblindfold.stepper.class">Theapi\CctvBlindfoldBundle\Stepper</parameter>
         <parameter key="theapi_cctvblindfold.process.class">Symfony\Component\Process\Process</parameter>
+        <parameter key="theapi_cctvblindfold.event_dispatcher.class">Symfony\Component\EventDispatcher\EventDispatcher</parameter>
     </parameters>
 
     <services>
@@ -21,6 +22,7 @@
         <service id="theapi_cctvblindfold.device_detector" class="%theapi_cctvblindfold.device_detector.class%">
             <argument>%theapi_cctvblindfold.devices%</argument>
             <argument type="service" id="theapi_cctvblindfold.process" />
+            <argument type="service" id="theapi_cctvblindfold.event_dispatcher.class" />
             <call method="setEntityManager">
              <argument type="service" id="doctrine.orm.entity_manager" />
             </call>
