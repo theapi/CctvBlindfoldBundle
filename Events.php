@@ -23,4 +23,12 @@ final class Events
      * @var string
      */
     const DEVICE_DETECTOR_NOT_FOUND = 'device_detector.not_found';
+
+    /**
+     * The blindfold.stream_data event is thrown
+     * when a connected socket reports data.
+     *
+     * @var string
+     */
+    const BLINDFOLD_STREAM_DATA = 'blindfold.stream_data';
 }

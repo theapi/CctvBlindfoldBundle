@@ -1,7 +1,7 @@
 <?php
 namespace Theapi\CctvBlindfoldBundle;
 
-
+use Symfony\Component\EventDispatcher\GenericEvent;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
@@ -37,19 +37,66 @@ class Blindfold
     protected $output;
 
     /**
+     * Sensor sockets to listen to
+     */
+    protected $readSockets = array();
+
+    /**
     * Constructor
     */
     public function __construct($driver, EventDispatcherInterface $eventDispatcher)
     {
         $this->driver = $driver;
         $this->eventDispatcher = $eventDispatcher;
-        $this->eventDispatcher->addListener('device_detector.found', array($this, 'close'));
+        $this->eventDispatcher->addListener('device_detector.found', array($this, 'handleDeviceFound'));
         $this->eventDispatcher->addListener('device_detector.not_found', array($this, 'open'));
+        $this->eventDispatcher->addListener('blindfold.stream_data', array($this, 'handleStreamData'));
+
+        // bit rough & ready ATM Socket connect to the analogue to digital converter (adc.py)
+        $this->adcSocket = stream_socket_client('tcp://localhost:8889', $errno, $errstr, 30);
+        if ($this->adcSocket) {
+          $this->readSockets[] = $this->adcSocket;
+        }
     }
 
     public function setOutput(OutputInterface $output)
     {
         $this->output = $output;
+    }
+
+    public function streamSelect() {
+        if (empty($this->readSockets)) {
+
+            return false;
+        }
+
+        $read = $this->readSockets;
+        $write = $except = null;
+        $changed = stream_select($read, $write, $except, 0, 200000);
+        foreach ($read as $stream) {
+            $data = fread(stream, 8192);
+            if (strlen($data) > 0) {
+                $event = new GenericEvent(
+                    stream,
+                    array('data' => $data)
+                );
+                $this->eventDispatcher('blindfold.stream_data', $event);
+            }
+        }
+
+        return true;
+    }
+
+    public function handleStreamData(GenericEvent $event) {
+        $stream = $event->getSubject();
+        $data = $event['data'];
+        //@todo do something with the stream data...
+    }
+
+    public function handleDeviceFound() {
+        // currently just ensure closed
+        // but in future it depends on other sensors in handleStreamData()
+        $this->close();
     }
 
     public function toggle()
