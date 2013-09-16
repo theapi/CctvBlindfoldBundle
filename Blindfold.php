@@ -4,11 +4,12 @@ namespace Theapi\CctvBlindfoldBundle;
 use Symfony\Component\EventDispatcher\GenericEvent;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\DependencyInjection\ContainerAware;
 
 /**
  * Represents the movable cover over the camera lens.
  */
-class Blindfold
+class Blindfold extends ContainerAware
 {
 
     const CLOSED = 0;
@@ -44,10 +45,10 @@ class Blindfold
     /**
     * Constructor
     */
-    public function __construct($driver, EventDispatcherInterface $eventDispatcher)
+    public function __construct($driver)
     {
         $this->driver = $driver;
-        $this->eventDispatcher = $eventDispatcher;
+        $this->eventDispatcher = $this->container->get('event_dispatcher');
         $this->eventDispatcher->addListener('device_detector.found', array($this, 'handleDeviceFound'));
         $this->eventDispatcher->addListener('device_detector.not_found', array($this, 'open'));
         $this->eventDispatcher->addListener('blindfold.stream_data', array($this, 'handleStreamData'));

@@ -22,7 +22,6 @@
         <service id="theapi_cctvblindfold.device_detector" class="%theapi_cctvblindfold.device_detector.class%">
             <argument>%theapi_cctvblindfold.devices%</argument>
             <argument type="service" id="theapi_cctvblindfold.process" />
-            <argument type="service" id="theapi_cctvblindfold.event_dispatcher.class" />
             <call method="setEntityManager">
              <argument type="service" id="doctrine.orm.entity_manager" />
             </call>
@@ -34,7 +33,6 @@
         
         <service id="theapi_cctvblindfold.blindfold" class="%theapi_cctvblindfold.blindfold.class%">
             <argument type="service" id="theapi_cctvblindfold.stepper" />
-            <argument type="service" id="theapi_cctvblindfold.event_dispatcher.class" />
         </service>
         
     </services>

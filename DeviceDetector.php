@@ -7,12 +7,13 @@ use Theapi\CctvBlindfoldBundle\Entity\Detection;
 
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\DependencyInjection\ContainerAware;
 
 
 /**
  * Detect the precense of devices (mobile phones)
  */
-class DeviceDetector
+class DeviceDetector extends ContainerAware
 {
 
     /**
@@ -43,11 +44,11 @@ class DeviceDetector
     /**
     * Constructor
     */
-    public function __construct($devices, $process, EventDispatcherInterface $eventDispatcher)
+    public function __construct($devices, $process)
     {
         $this->devices = $devices;
         $this->process = $process;
-        $this->eventDispatcher = $eventDispatcher;
+        $this->eventDispatcher = $this->container->get('event_dispatcher');
         $this->found = array();
 
         try {
