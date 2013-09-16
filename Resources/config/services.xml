@@ -34,6 +34,7 @@
         
         <service id="theapi_cctvblindfold.blindfold" class="%theapi_cctvblindfold.blindfold.class%">
             <argument type="service" id="theapi_cctvblindfold.stepper" />
+            <argument type="service" id="theapi_cctvblindfold.event_dispatcher.class" />
         </service>
         
     </services>
