@@ -25,20 +25,40 @@ class DaemonCommand extends ContainerAwareCommand
         $container = $this->getContainer();
         $detectCommand = $this->getApplication()->find('cctvbf:detect');
         $input = new ArrayInput(array('command' => 'detect'));
-        $lastDetected = 0;
+        $lastDetect = 0;
+
+        // bit rough & ready ATM Socket connect to the analogue to digital converter (adc.py)
+        $fp = stream_socket_client('tcp://localhost:8889', $errno, $errstr, 30);
+        if ($fp) {
+          $read[] = $fp;
+        }
 
         while (true) {
             $now = time();
             //@todo configurable last detected time since.
-            if ($now - $lastDetected > 120) {
+            if ($now - $lastDetect > 120) {
                 $detectCommand->run($input, $output);
-                $lastDetected = $now;
+                $lastDetect = $now;
             }
 
-            //@todo Socket connect to the analogue to digital converter (adc.py)
 
-            usleep(200000);
+            if (count($read) > 0) {
+              $changed = stream_select($read, $write, $except, 0, 200000);
+
+              foreach ($read as $stream) {
+                $data = fread(stream, 8192);
+                if (strlen($data) > 0) {
+                  // send event
+                }
+              }
+
+            } else {
+              usleep(200000);
+            }
+
         }
 
     }
+
+
 }
