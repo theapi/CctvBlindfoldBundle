@@ -77,6 +77,7 @@ class DeviceDetector extends ContainerAware
     public function detect()
     {
         // are the phones on the network...
+        $this->detected = array();
         $str = $this->scan();
         $present = $this->analyseScan($str);
         if (!$present) {
