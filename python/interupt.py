@@ -19,7 +19,7 @@ def signal_handler(signal, frame):
 # this will run in another thread when our event is detected
 def my_callback(channel):
     print "Rising edge detected on port 23 - even though, in the main thread,"
-    print "we are still waiting for a falling edge - how cool?\n"
+    print "- how cool?\n"
 
 print "You will also need a second button connected so that when pressed"
 print "it will connect GPIO port 23 (pin 18) to 3V3 (pin 1)"
@@ -29,7 +29,7 @@ print "it will connect GPIO port 23 (pin 18) to 3V3 (pin 1)"
 # when a rising edge is detected on port 23, regardless of whatever
 # else is happening in the program, the function "my_callback" will be run
 # It will happen even while the program is in the loop.
-GPIO.add_event_detect(23, GPIO.RISING, callback=my_callback)
+GPIO.add_event_detect(23, GPIO.RISING, callback=my_callback, bouncetime=200)
 
 
 signal.signal(signal.SIGINT, signal_handler)
