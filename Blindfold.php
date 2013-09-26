@@ -49,12 +49,6 @@ class Blindfold extends ContainerAware
     public function __construct($driver)
     {
         $this->driver = $driver;
-
-        // bit rough & ready ATM Socket connect to the analogue to digital converter (adc.py)
-        $this->adcSocket = @stream_socket_client('tcp://localhost:8889', $errno, $errstr, 30);
-        if ($this->adcSocket) {
-          $this->readSockets[] = $this->adcSocket;
-        }
     }
 
     public function setContainer(ContainerInterface $container = null)
@@ -73,6 +67,39 @@ class Blindfold extends ContainerAware
     public function setOutput(OutputInterface $output)
     {
         $this->output = $output;
+    }
+
+    /**
+     * Start the python daemon that listens for inputs from sensors, switches etc.
+     */
+    public function startInputDaemon()
+    {
+        // The daemon must run independantly in the background.
+        // So not using Symfony process.
+        $cmd = 'nohup sudo python '. __DIR__ . '/python/input.py > /dev/null 2>&1 & echo $!';
+        exec($cmd, $output);
+        $this->inputPid = (int) $output[0];
+        if (!empty($this->inputPid)) {
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Connect to the socket server of the input daemon (input.py).
+     */
+    public function connectToInputDaemon()
+    {
+        $socket = @stream_socket_client('tcp://localhost:8889', $errno, $errstr, 30);
+        if ($socket) {
+            $this->readSockets[] = $socket;
+
+            return true;
+        }
+
+        return false;
     }
 
     public function streamSelect() {
