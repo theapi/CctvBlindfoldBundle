@@ -25,6 +25,8 @@ class Configuration implements ConfigurationInterface
         $rootNode
             ->children()
                 ->scalarNode('devices')->end()
+                ->scalarNode('steps_open')->defaultValue('100')->end()
+                ->scalarNode('steps_close')->defaultValue('-100')->end()
              ->end()
         ;
 

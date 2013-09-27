@@ -28,6 +28,8 @@ class TheapiCctvBlindfoldExtension extends Extension
         $loader->load('services.xml');
 
         $container->setParameter('theapi_cctvblindfold.devices', $config['devices']);
+        $container->setParameter('theapi_cctvblindfold.steps_open', $config['steps_open']);
+        $container->setParameter('theapi_cctvblindfold.steps_close', $config['steps_close']);
 
     }
 }

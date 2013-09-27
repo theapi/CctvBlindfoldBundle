@@ -163,7 +163,7 @@ class Blindfold extends ContainerAware
         }
     }
 
-    public function rotate($amount = 80)
+    public function rotate($amount = 128)
     {
         $this->driver->rotate($amount);
     }

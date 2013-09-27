@@ -20,11 +20,25 @@ class Stepper
     protected $process;
 
     /**
+     * How many steps needed to open
+     * @var int
+     */
+    protected $stepsOpen;
+
+    /**
+     * How many steps needed to close
+     * @var int
+     */
+    protected $stepsClose;
+
+    /**
      * Constructor
      */
-    public function __construct($process)
+    public function __construct($process, $stepsOpen = 100, $stepsClose = -100)
     {
         $this->process = $process;
+        $this->stepsOpen = $stepsOpen;
+        $this->stepsClose = $stepsClose;
     }
 
     public function setOutput(OutputInterface $output)
@@ -47,12 +61,12 @@ class Stepper
 
     public function open()
     {
-        $this->rotate(-80);
+        $this->rotate($this->stepsOpen);
     }
 
     public function close()
     {
-        $this->rotate(80);
+        $this->rotate($this->stepsClose);
     }
 
     public function demo()

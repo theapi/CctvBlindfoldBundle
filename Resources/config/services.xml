@@ -32,6 +32,8 @@
         
         <service id="theapi_cctvblindfold.stepper" class="%theapi_cctvblindfold.stepper.class%">
             <argument type="service" id="theapi_cctvblindfold.process" />
+            <argument>%theapi_cctvblindfold.steps_open%</argument>
+            <argument>%theapi_cctvblindfold.steps_close%</argument>
         </service>
         
         <service id="theapi_cctvblindfold.blindfold" class="%theapi_cctvblindfold.blindfold.class%">
