@@ -128,7 +128,13 @@ class Blindfold extends ContainerAware
     public function handleStreamData(GenericEvent $event) {
         $stream = $event->getSubject();
         $data = $event['data'];
-        //@todo do something with the stream data...
+
+        $this->output->writeln($data); // tmp
+
+        if ($data == 'TOGGLE') {
+            $this->toggle();
+            //@todo stop the device detector overiding the toggle switch...
+        }
     }
 
     public function handleDeviceFound() {
