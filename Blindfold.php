@@ -44,6 +44,11 @@ class Blindfold extends ContainerAware
     protected $readSockets = array();
 
     /**
+     * Remeber the last time the socket asked for a toggle.
+     */
+    protected $lastSocketToggle = 0;
+
+    /**
     * Constructor
     */
     public function __construct($driver)
@@ -132,8 +137,13 @@ class Blindfold extends ContainerAware
         $this->output->writeln($data); // tmp
 
         if ($data == 'TOGGLE') {
-            $this->toggle();
-            //@todo stop the device detector overiding the toggle switch...
+            // 1 second debounce
+            $now = time();
+            if ($now - $this->lastSocketToggle > 1) {
+                $this->lastSocketToggle = $now;
+                $this->toggle();
+                //@todo stop the device detector overiding the toggle switch...
+            }
         }
     }
 
