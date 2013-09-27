@@ -112,10 +112,10 @@ class Blindfold extends ContainerAware
         $write = $except = null;
         $changed = stream_select($read, $write, $except, 0, 200000);
         foreach ($read as $stream) {
-            $data = fread(stream, 8192);
+            $data = fread($stream, 8192);
             if (strlen($data) > 0) {
                 $event = new GenericEvent(
-                    stream,
+                    $stream,
                     array('data' => $data)
                 );
                 $this->eventDispatcher->dispatch('blindfold.stream_data', $event);

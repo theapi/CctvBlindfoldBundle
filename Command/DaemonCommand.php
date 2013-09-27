@@ -32,7 +32,7 @@ class DaemonCommand extends ContainerAwareCommand
         $input = new ArrayInput(array('command' => 'detect'));
         $lastDetect = 0;
 
-        usleep(200000); // give the input daemon a chance to start
+        sleep(2); // give the input daemon a chance to start
         $blindfold->connectToInputDaemon();
 
         while (true) {
