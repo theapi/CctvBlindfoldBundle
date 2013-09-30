@@ -32,7 +32,7 @@ def anticlockwise(steps):
         for halfstep in reversed(range(8)):
             for pin in range(4):
                 GPIO.output(ControlPin[pin], seq[halfstep][pin])
-            time.sleep(0.001)
+            time.sleep(0.005)
 
 
 def clockwise(steps):
@@ -40,7 +40,7 @@ def clockwise(steps):
         for halfstep in range(8):
             for pin in range(4):
                 GPIO.output(ControlPin[pin], seq[halfstep][pin])
-            time.sleep(0.001)
+            time.sleep(0.005)
 
 
 
