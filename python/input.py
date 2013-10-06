@@ -62,7 +62,7 @@ if __name__ == "__main__":
 
     # The GPIO.add_event_detect() line below set things up so that
     # the callback will happen even while the program is in the loop.
-    GPIO.add_event_detect(switch_pin, GPIO.FALLING, callback=switch_callback, bouncetime=200)
+    GPIO.add_event_detect(switch_pin, GPIO.FALLING, callback=switch_callback, bouncetime=2000)
 
     while 1:
 
