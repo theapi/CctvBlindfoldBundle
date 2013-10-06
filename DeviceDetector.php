@@ -77,9 +77,16 @@ class DeviceDetector extends ContainerAware
     public function detect()
     {
         // are the phones on the network...
-        $this->detected = array();
+        //$this->detected = array();
         $str = $this->scan();
-        $present = $this->analyseScan($str);
+        $this->analyseScan($str);
+
+        if (!empty($this->detected)) {
+            $present = true;
+        } else {
+            $present = false;
+        }
+
         if (!$present) {
             // repeat in a few seconds because the phones take a while to respond initially...
             sleep(10);
@@ -155,6 +162,7 @@ class DeviceDetector extends ContainerAware
     */
     public function analyseScan($str)
     {
+        $this->detected = array();
 
         // output results if verbose (app/console -v cctvbf:detect)
         if (!empty($this->output) && $this->output->getVerbosity() > 1) {
@@ -163,7 +171,7 @@ class DeviceDetector extends ContainerAware
 
         if (strstr($str, '(0 hosts up)')) {
             // no devices found
-            return false;
+            return;
         }
 
         // Note which ones were found
@@ -175,7 +183,7 @@ class DeviceDetector extends ContainerAware
             }
         }
 
-        return true;
+        return;
     }
 
     protected function validateDevices()
