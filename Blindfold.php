@@ -187,6 +187,7 @@ class Blindfold extends ContainerAware
         if ($this->getState() != self::CLOSED) {
             $this->driver->close();
             $this->setState(self::CLOSED);
+            $this->output->writeln(__FUNCTION__); // tmp just to check event is being caught
         }
     }
 
