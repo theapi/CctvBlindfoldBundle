@@ -77,7 +77,7 @@ class DeviceDetector extends ContainerAware
     *   device_detector.not_found
     *
     */
-    public function detect()
+    public function detect($count = 0)
     {
         // are the devices on the network...
         $str = $this->scan();
@@ -95,11 +95,10 @@ class DeviceDetector extends ContainerAware
             $present = false;
         }
 
-        if (!$present) {
+        if (!$present && $count == 0) {
             // repeat in a few seconds because the phones take a while to respond initially...
             sleep(15);
-            $str = $this->scan();
-            $present = $this->analyseScan($str);
+            return $this->detect(1);
         }
 
         if (!empty($this->output)) {
@@ -165,7 +164,7 @@ class DeviceDetector extends ContainerAware
     /**
     * Analyse the output of the scan to find the relevant info.
     *
-    * @return bool
+    * @throws Exception
     */
     public function analyseScan($str)
     {
@@ -179,7 +178,7 @@ class DeviceDetector extends ContainerAware
         try {
             $xml = new \SimpleXMLElement($str);
             $up = (int) $xml->runstats->hosts['up'];
-            $this->output->writeln($up);
+            $this->output->writeln('Up: <info>' . $up . '</info>');
         } catch (\Exception $e) {
             // failed to get a meaningfull result
             throw $e;
