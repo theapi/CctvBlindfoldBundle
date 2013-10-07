@@ -72,14 +72,22 @@ class DeviceDetector extends ContainerAware
     /**
     * Detect the the devices of interest.
     *
-    * @return bool
+    * Dispatches events:
+    *   device_detector.found
+    *   device_detector.not_found
+    *
     */
     public function detect()
     {
-        // are the phones on the network...
-        //$this->detected = array();
+        // are the devices on the network...
         $str = $this->scan();
-        $this->analyseScan($str);
+
+        try {
+            $this->analyseScan($str);
+        } catch (\Exception $e) {
+            // failed to get a meaningfull result
+            return;
+        }
 
         if (!empty($this->detected)) {
             $present = true;
@@ -89,7 +97,7 @@ class DeviceDetector extends ContainerAware
 
         if (!$present) {
             // repeat in a few seconds because the phones take a while to respond initially...
-            sleep(10);
+            sleep(15);
             $str = $this->scan();
             $present = $this->analyseScan($str);
         }
@@ -132,7 +140,6 @@ class DeviceDetector extends ContainerAware
             $eventDispatcher->dispatch('device_detector.not_found');
         }
 
-        return $present;
     }
 
     /**
@@ -143,7 +150,7 @@ class DeviceDetector extends ContainerAware
     */
     public function scan()
     {
-        $cmd = 'nmap -sP ' . $this->devices . ' 2>&1';
+        $cmd = 'sudo nmap -sP ' . $this->devices . ' -oX - 2>&1';
 
         $this->process->setCommandLine($cmd);
         $this->process->run();
@@ -169,17 +176,28 @@ class DeviceDetector extends ContainerAware
             $this->output->writeln($str);
         }
 
-        if (strstr($str, '(0 hosts up)')) {
+        try {
+            $xml = new \SimpleXMLElement($str);
+            $up = (int) $xml->runstats->hosts['up'];
+            $this->output->writeln($up);
+        } catch (\Exception $e) {
+            // failed to get a meaningfull result
+            throw $e;
+        }
+
+        if ($up == 0) {
             // no devices found
             return;
         }
 
         // Note which ones were found
-        $devices = explode(' ', $this->devices);
-
-        foreach ($devices as $ip) {
-            if (strstr($str, '(' . $ip . ')')) {
-                $this->detected[] = $ip;
+        foreach ($xml->host as $host) {
+            if ($host->status[0]['state'] == 'up') {
+                foreach ($host->address as $address) {
+                    if ($address['addrtype'] == 'ipv4') {
+                        $this->detected[] = $address['addr'];
+                    }
+                }
             }
         }
 
