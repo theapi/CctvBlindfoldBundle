@@ -79,10 +79,10 @@ class DeviceDetector extends ContainerAware
     */
     public function detect($count = 0)
     {
-        // are the devices on the network...
-        $str = $this->scan();
 
         try {
+            // are the devices on the network...
+            $str = $this->scan();
             $this->analyseScan($str);
         } catch (\Exception $e) {
             // failed to get a meaningfull result
