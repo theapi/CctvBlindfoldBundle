@@ -65,7 +65,7 @@ class Blindfold extends ContainerAware
     public function addListeners() {
         $this->eventDispatcher = $this->container->get('event_dispatcher');
         $this->eventDispatcher->addListener('device_detector.found', array($this, 'handleDeviceFound'));
-        $this->eventDispatcher->addListener('device_detector.not_found', array($this, 'open'));
+        $this->eventDispatcher->addListener('device_detector.not_found', array($this, 'handleDeviceNotFound'));
         $this->eventDispatcher->addListener('blindfold.stream_data', array($this, 'handleStreamData'));
     }
 
@@ -154,6 +154,13 @@ class Blindfold extends ContainerAware
         $this->close();
     }
 
+    public function handleDeviceNotFound() {
+        $this->output->writeln(__FUNCTION__); // tmp just to check event is being caught
+        // currently just ensure open
+        // but in future it depends on other sensors in handleStreamData()
+        $this->open();
+    }
+
     public function toggle()
     {
         if ($this->getState() == self::OPEN) {
@@ -187,7 +194,6 @@ class Blindfold extends ContainerAware
         if ($this->getState() != self::CLOSED) {
             $this->driver->close();
             $this->setState(self::CLOSED);
-            $this->output->writeln(__FUNCTION__); // tmp just to check event is being caught
         }
     }
 

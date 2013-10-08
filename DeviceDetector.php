@@ -95,7 +95,7 @@ class DeviceDetector extends ContainerAware
             $present = false;
         }
 
-        if (!$present && $count < 2) {
+        if (!$present && $count <= 2) {
             // repeat in a few seconds because the phones take a while to respond initially...
             sleep(15);
             return $this->detect(2);
@@ -109,7 +109,7 @@ class DeviceDetector extends ContainerAware
                 }
                 $devices = join(' ', $this->detected);
             } else {
-                $out = 'Not found: <info>' . $this->devices . '</info>' . date('r');
+                $out = 'Not found: <info>' . $this->devices . '</info> ' . date('r');
                 $devices = '';
             }
             $this->output->writeln($out);
