@@ -86,6 +86,9 @@ class DeviceDetector extends ContainerAware
             $this->analyseScan($str);
         } catch (\Exception $e) {
             // failed to get a meaningfull result
+            if (!empty($this->output)) {
+                $out = 'Scan failed: <info>' . $e->getMessage() . '</info> ' . date('r');
+            }
             return;
         }
 
@@ -95,10 +98,10 @@ class DeviceDetector extends ContainerAware
             $present = false;
         }
 
-        if (!$present && $count <= 2) {
+        if (!$present && $count < 3) {
             // repeat in a few seconds because the phones take a while to respond initially...
-            sleep(15);
-            return $this->detect(2);
+            sleep(10);
+            return $this->detect($count + 1);
         }
 
         if (!empty($this->output)) {
