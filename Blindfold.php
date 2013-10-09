@@ -184,6 +184,8 @@ class Blindfold extends ContainerAware
             $this->driver->open();
             $this->setState(self::OPEN);
 
+            // Let stateless scripts know when it was moved.
+            touch('/tmp/cctvbf_moved');
             // Tell everyone.
             $this->eventDispatcher->dispatch('blindfold.open');
         }
@@ -198,6 +200,8 @@ class Blindfold extends ContainerAware
             $this->driver->close();
             $this->setState(self::CLOSED);
 
+            // Let stateless scripts know when it was moved.
+            touch('/tmp/cctvbf_moved');
             // Tell everyone.
             $this->eventDispatcher->dispatch('blindfold.close');
         }
