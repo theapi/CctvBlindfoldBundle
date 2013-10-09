@@ -31,4 +31,20 @@ final class Events
      * @var string
      */
     const BLINDFOLD_STREAM_DATA = 'blindfold.stream_data';
+
+    /**
+     * The blindfold.open event is thrown
+     * when the blindfold has just been opened.
+     *
+     * @var string
+     */
+    const BLINDFOLD_OPEN = 'blindfold.open';
+
+    /**
+     * The blindfold.close event is thrown
+     * when the blindfold has just been closed.
+     *
+     * @var string
+     */
+    const BLINDFOLD_CLOSE = 'blindfold.close';
 }

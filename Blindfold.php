@@ -183,6 +183,9 @@ class Blindfold extends ContainerAware
         if ($this->getState() != self::OPEN) {
             $this->driver->open();
             $this->setState(self::OPEN);
+
+            // Tell everyone.
+            $this->eventDispatcher->dispatch('blindfold.open');
         }
     }
 
@@ -194,6 +197,9 @@ class Blindfold extends ContainerAware
         if ($this->getState() != self::CLOSED) {
             $this->driver->close();
             $this->setState(self::CLOSED);
+
+            // Tell everyone.
+            $this->eventDispatcher->dispatch('blindfold.close');
         }
     }
 
