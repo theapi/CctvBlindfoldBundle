@@ -15,6 +15,8 @@ class Blindfold extends ContainerAware
 
     const CLOSED = 0;
     const OPEN = 1;
+    const RUN_MOVED = '/run/cctvbf_moved';
+    const RUN_STATE = '/run/cctvbf_state';
 
 
     /**
@@ -185,7 +187,7 @@ class Blindfold extends ContainerAware
             $this->setState(self::OPEN);
 
             // Let stateless scripts know when it was moved.
-            touch('/tmp/cctvbf_moved');
+            touch(self::RUN_MOVED);
             // Tell everyone.
             $this->eventDispatcher->dispatch('blindfold.open');
         }
@@ -201,7 +203,7 @@ class Blindfold extends ContainerAware
             $this->setState(self::CLOSED);
 
             // Let stateless scripts know when it was moved.
-            touch('/tmp/cctvbf_moved');
+            touch(self::RUN_MOVED);
             // Tell everyone.
             $this->eventDispatcher->dispatch('blindfold.close');
         }
@@ -219,7 +221,7 @@ class Blindfold extends ContainerAware
     */
     public function getState()
     {
-        if (file_exists('/tmp/cctvbf_state')) {
+        if (file_exists(self::RUN_STATE)) {
             $this->state = self::OPEN;
         } else {
             $this->state = self::CLOSED;
@@ -234,12 +236,12 @@ class Blindfold extends ContainerAware
     public function setState($state)
     {
         if ($state == self::CLOSED) {
-            if (file_exists('/tmp/cctvbf_state')) {
-                unlink('/tmp/cctvbf_state');
+            if (file_exists(self::RUN_STATE)) {
+                unlink(self::RUN_STATE);
             }
             $this->state = self::CLOSED;
         } elseif ($state == self::OPEN) {
-            touch('/tmp/cctvbf_state');
+            touch(self::RUN_STATE);
             $this->state = self::OPEN;
         }
     }
