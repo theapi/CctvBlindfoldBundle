@@ -15,8 +15,8 @@ class Blindfold extends ContainerAware
 
     const CLOSED = 0;
     const OPEN = 1;
-    const RUN_MOVED = '/run/cctvbf_moved';
-    const RUN_STATE = '/run/cctvbf_state';
+    const RUN_MOVED = '/run/shm/cctvbf_moved';
+    const RUN_STATE = '/run/shm/cctvbf_state';
 
 
     /**
