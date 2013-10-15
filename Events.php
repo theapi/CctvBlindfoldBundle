@@ -25,12 +25,21 @@ final class Events
     const DEVICE_DETECTOR_NOT_FOUND = 'device_detector.not_found';
 
     /**
+     * The device_detector.pre_detect event is thrown
+     * just before the detection is done.
+     *
+     * @var string
+     */
+    const DEVICE_DETECTOR_PRE_DETECT = 'device_detector.pre_detect';
+
+    /**
      * The blindfold.stream_data event is thrown
      * when a connected socket reports data.
      *
      * @var string
      */
     const BLINDFOLD_STREAM_DATA = 'blindfold.stream_data';
+
 
     /**
      * The blindfold.open event is thrown

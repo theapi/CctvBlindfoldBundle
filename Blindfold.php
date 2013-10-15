@@ -109,7 +109,8 @@ class Blindfold extends ContainerAware
         return false;
     }
 
-    public function streamSelect() {
+    public function streamSelect()
+    {
         if (empty($this->readSockets)) {
 
             return false;
@@ -132,7 +133,8 @@ class Blindfold extends ContainerAware
         return true;
     }
 
-    public function handleStreamData(GenericEvent $event) {
+    public function handleStreamData(GenericEvent $event)
+    {
         $stream = $event->getSubject();
         $data = $event['data'];
 
@@ -149,14 +151,16 @@ class Blindfold extends ContainerAware
         }
     }
 
-    public function handleDeviceFound() {
+    public function handleDeviceFound()
+    {
         $this->output->writeln(__FUNCTION__); // tmp just to check event is being caught
         // currently just ensure closed
         // but in future it depends on other sensors in handleStreamData()
         $this->close();
     }
 
-    public function handleDeviceNotFound() {
+    public function handleDeviceNotFound()
+    {
         $this->output->writeln(__FUNCTION__); // tmp just to check event is being caught
         // currently just ensure open
         // but in future it depends on other sensors in handleStreamData()

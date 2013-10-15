@@ -59,6 +59,12 @@ class DeviceDetector extends ContainerAware
 
     }
 
+    public function setContainer(ContainerInterface $container = null)
+    {
+        $this->container = $container;
+        $this->eventDispatcher = $this->container->get('event_dispatcher');
+    }
+
     public function setOutput(OutputInterface $output)
     {
         $this->output = $output;
@@ -79,6 +85,7 @@ class DeviceDetector extends ContainerAware
     */
     public function detect($count = 0)
     {
+        $this->eventDispatcher->dispatch('device_detector.pre_detect');
 
         try {
             // are the devices on the network...
