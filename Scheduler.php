@@ -19,19 +19,10 @@ class Scheduler extends ContainerAware
     protected $eventDispatcher;
 
     /**
-    * The OutputInterface object
-    */
-    protected $output;
-
-    /**
      * The blindfold object from  the container.
      */
     protected $blindfold;
 
-    public function setOutput(OutputInterface $output)
-    {
-        $this->output = $output;
-    }
 
     public function setContainer(ContainerInterface $container = null)
     {
@@ -51,10 +42,21 @@ class Scheduler extends ContainerAware
      */
     public function onPreDetect()
     {
-        //@todo: configuration etc.
+        //@todo: configuration etc...
 
+        $now = new DateTime();
+        $stayOpenFrom = DateTime($now->format('Y-m-d') . ' 01:00');
+        $stayOpenTo = DateTime($now->format('Y-m-d') . ' 06:00');
 
+        $nowUnix = $now->format('U');
+        if ($nowUnix > $stayOpenFrom->format('U') && $nowUnix < $stayOpenTo->format('U')) {
+            $this->blindfold->setAllowClose(false);
+            $this->blindfold->open();
 
+            return;
+        }
+
+        $this->blindfold->setAllowClose(true);
     }
 
 }

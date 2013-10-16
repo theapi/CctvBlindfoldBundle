@@ -46,9 +46,19 @@ class Blindfold extends ContainerAware
     protected $readSockets = array();
 
     /**
-     * Remeber the last time the socket asked for a toggle.
+     * The last time the socket asked for a toggle.
      */
     protected $lastSocketToggle = 0;
+
+    /**
+     * Whether to let the blindfold be opened.
+     */
+    protected $allowOpen = true;
+
+    /**
+     * Whether to let the blindfold be closed.
+     */
+    protected $allowClose = true;
 
     /**
     * Constructor
@@ -154,17 +164,53 @@ class Blindfold extends ContainerAware
     public function handleDeviceFound()
     {
         $this->output->writeln(__FUNCTION__); // tmp just to check event is being caught
-        // currently just ensure closed
-        // but in future it depends on other sensors in handleStreamData()
-        $this->close();
+        if ($this->getAllowClose()) {
+            $this->close();
+        }
     }
 
     public function handleDeviceNotFound()
     {
         $this->output->writeln(__FUNCTION__); // tmp just to check event is being caught
-        // currently just ensure open
-        // but in future it depends on other sensors in handleStreamData()
-        $this->open();
+        if ($this->getAllowOpen()) {
+            $this->open();
+        }
+    }
+
+   /**
+     * Whether the blindfold is allwed to be opened.
+     */
+    public function getAllowOpen()
+    {
+        return $this->allowOpen;
+    }
+
+    /**
+     * Allow the blindfold to be opened.
+     *
+     * @todo priority - to arbitrate over arguments between sensors, plugins etc.
+     */
+    public function setAllowOpen($bool)
+    {
+        $this->allowOpen = (bool) $bool;
+    }
+
+    /**
+     * Whether the blindfold is allwed to be closed.
+     */
+    public function getAllowClose()
+    {
+        return $this->allowClose;
+    }
+
+    /**
+     * Allow the blindfold to be closed.
+     *
+     * @todo priority - to arbitrate over arguments between sensors, plugins etc.
+     */
+    public function setAllowClose($bool)
+    {
+        $this->allowClose = (bool) $bool;
     }
 
     public function toggle()
