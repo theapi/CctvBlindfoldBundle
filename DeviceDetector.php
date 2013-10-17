@@ -8,6 +8,7 @@ use Theapi\CctvBlindfoldBundle\Entity\Detection;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\DependencyInjection\ContainerAware;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 
 /**
