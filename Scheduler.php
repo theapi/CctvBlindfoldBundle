@@ -45,8 +45,8 @@ class Scheduler extends ContainerAware
         //@todo: configuration etc...
 
         $now = new DateTime();
-        $stayOpenFrom = DateTime($now->format('Y-m-d') . ' 01:00');
-        $stayOpenTo = DateTime($now->format('Y-m-d') . ' 06:00');
+        $stayOpenFrom = new DateTime($now->format('Y-m-d') . ' 01:00');
+        $stayOpenTo = new DateTime($now->format('Y-m-d') . ' 06:00');
 
         $nowUnix = $now->format('U');
         if ($nowUnix > $stayOpenFrom->format('U') && $nowUnix < $stayOpenTo->format('U')) {
