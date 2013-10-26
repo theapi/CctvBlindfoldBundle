@@ -5,6 +5,7 @@ namespace Theapi\CctvBlindfoldBundle;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\DependencyInjection\ContainerAware;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 
 /**
@@ -44,9 +45,9 @@ class Scheduler extends ContainerAware
     {
         //@todo: configuration etc...
 
-        $now = new DateTime();
-        $stayOpenFrom = new DateTime($now->format('Y-m-d') . ' 01:00');
-        $stayOpenTo = new DateTime($now->format('Y-m-d') . ' 06:00');
+        $now = new \DateTime();
+        $stayOpenFrom = new \DateTime($now->format('Y-m-d') . ' 01:00');
+        $stayOpenTo = new \DateTime($now->format('Y-m-d') . ' 06:00');
 
         $nowUnix = $now->format('U');
         if ($nowUnix > $stayOpenFrom->format('U') && $nowUnix < $stayOpenTo->format('U')) {
@@ -58,5 +59,6 @@ class Scheduler extends ContainerAware
 
         $this->blindfold->setAllowClose(true);
     }
+
 
 }

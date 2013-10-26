@@ -61,11 +61,21 @@ class Blindfold extends ContainerAware
     protected $allowClose = true;
 
     /**
+     * Registerd plugins
+     */
+    protected $plugins = array();
+
+    /**
     * Constructor
     */
     public function __construct($driver)
     {
         $this->driver = $driver;
+    }
+
+    public function setPlugin($plugin)
+    {
+        $this->plugins[] = $plugin;
     }
 
     public function setContainer(ContainerInterface $container = null)
