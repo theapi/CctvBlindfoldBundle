@@ -11,6 +11,8 @@
 // @see http://www.airspayce.com/mikem/arduino/VirtualWire_8h.html#ae62b601260ae59e7e83c1e63ae0c064b
 
 void setup() {
+  pinMode(13, OUTPUT);
+  
   // initialize serial communication
   Serial.begin(9600);
   Serial.println("setup");

@@ -16,11 +16,14 @@ unsigned long count = 0;
 
 void setup()
 {
+    pinMode(13, OUTPUT);
+  
     Serial.begin(9600);
     Serial.println("setup");
     // Initialise the IO and ISR
     vw_set_ptt_inverted(true); // Required for DR3100
     vw_setup(2000);      // Bits per sec
+
 }
 void loop()
 {
@@ -30,7 +33,7 @@ void loop()
     //sprintf(buf, "count=%lu", count); 
   
   
-    //const char *msg = "hello";
+    //const char *buf = "hello";
     digitalWrite(13, true); // Flash a light to show transmitting
     vw_send((uint8_t *)buf, strlen(buf));
     vw_wait_tx(); // Wait until the whole message is gone
