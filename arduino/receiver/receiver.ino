@@ -10,6 +10,11 @@
 // Pin 11 is the default receiver pin.
 // @see http://www.airspayce.com/mikem/arduino/VirtualWire_8h.html#ae62b601260ae59e7e83c1e63ae0c064b
 
+//TMP36 Pin Variables
+int sensorPin = 0; //the analog pin the TMP36's Vout (sense) pin is connected to
+long interval = 10000;
+long previousMillis = 0;
+
 void setup() {
   pinMode(13, OUTPUT);
   
@@ -26,6 +31,16 @@ void setup() {
 
 void loop()
 {
+  unsigned long currentMillis = millis();
+  if (currentMillis - previousMillis > interval) {
+    previousMillis = currentMillis;  
+    //getting the voltage reading from the temperature sensor
+    int reading = analogRead(sensorPin);
+    float temperatureC = (5.0 * reading * 100.0)/1024.0;
+    Serial.print("T:");
+    Serial.println(temperatureC); 
+  }
+  
 
     uint8_t buf[VW_MAX_MESSAGE_LEN];
     uint8_t buflen = VW_MAX_MESSAGE_LEN;
@@ -34,7 +49,7 @@ void loop()
         int i;
         digitalWrite(13, true); // Flash a light to show received good message
         // Message with a good checksum received, dump it.
-        Serial.print("Got: ");
+        Serial.print("R: ");
         
         for (i = 0; i < buflen; i++)
         {
