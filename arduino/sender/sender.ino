@@ -11,8 +11,11 @@
 
 
 // @see http://www.airspayce.com/mikem/arduino/VirtualWire_8h.html
-#define RF_TX_PIN 12    // Pin 12 is the default sender pin.
+#define RF_TX_PIN 9    // Pin 12 is the default sender pin so change it here.
+#define RF_POWER_PIN 10 // Provide power to the transmitter
 #define DEBUG_LED_TX 13 // Debug led for tx
+#define DEBUG_LED_PULSE 12 // Debug led for alive pulse (tmp)
+#define DEBUG_LED_MOTION 11
 
 #define PIR_UP_PIN 2        // int.0 interupt 0 on pin 2
 #define PIR_DOWN_PIN 3      // int.1 interupt 1 on pin 3
@@ -31,6 +34,9 @@ long interval = 1000;
 long pirReset = 3000; // How long to ignore further detects.
 long lastPirUp = 0;
 long lastPirDown = 0;
+
+boolean pulse = false;
+
 
 // Store the pir states on interupt.
 volatile byte flags = 0;
@@ -69,7 +75,11 @@ void isrPirDown()
 void setup()
 {
     pinMode(DEBUG_LED_TX, OUTPUT);
+    pinMode(DEBUG_LED_PULSE, OUTPUT);
+    pinMode(DEBUG_LED_MOTION, OUTPUT);
     
+    
+    pinMode(RF_POWER_PIN, OUTPUT);
     pinMode(PIR_UP_PIN, INPUT);
     pinMode(PIR_DOWN_PIN, INPUT);
     
@@ -79,8 +89,8 @@ void setup()
     bitClear(flags, F_DOWN_STAT);
      
   
-    Serial.begin(9600);
-    Serial.println("setup");
+    //Serial.begin(9600);
+    //Serial.println("setup");
     
     vw_set_tx_pin(RF_TX_PIN);
     vw_setup(2000);      // Bits per sec
@@ -98,32 +108,40 @@ void loop()
   if (currentMillis - previousMillis > interval) {
     previousMillis = currentMillis;
     // TODO: reset previousMillis when overruns max value.
+    
+    pulse = !pulse;
+    digitalWrite(DEBUG_LED_PULSE, pulse);
+    
 
     // Can't set use millis in the interupt.
     if (bitRead(flags, F_UP_STAT)) {
       lastPirUp = currentMillis;
-      Serial.println("UP on");
+      //Serial.println("UP on");
       bitClear(flags, F_UP_STAT);
+      digitalWrite(DEBUG_LED_MOTION, HIGH);
     }
     
     if (bitRead(flags, F_DOWN_STAT)) {
       lastPirDown = currentMillis;
-      Serial.println("DOWN on");
+      //Serial.println("DOWN on");
       bitClear(flags, F_DOWN_STAT);
+      digitalWrite(DEBUG_LED_MOTION, HIGH);
     }
 
     
     if (bitRead(flags, F_UP) && currentMillis - lastPirUp > pirReset) {
       bitClear(flags, F_UP);
-      Serial.println("UP off");
+      //Serial.println("UP off");
+      digitalWrite(DEBUG_LED_MOTION, LOW);
     }
       
     if (bitRead(flags, F_DOWN) && currentMillis - lastPirDown > pirReset) {
       bitClear(flags, F_DOWN);
-      Serial.println("DOWN off");
+      //Serial.println("DOWN off"); 
+      digitalWrite(DEBUG_LED_MOTION, LOW);
     }
       
-    if (bitRead(flags, F_UP) || bitRead(flags, F_DOWN)) { 
+    if (bitRead(flags, F_UP) || bitRead(flags, F_DOWN) || pulse) { 
       char buf[50];
       sprintf(buf, "count=%lu,flags=%u", count, flags); 
    
@@ -135,13 +153,14 @@ void loop()
         strcat (buf, " DOWN ");
       }
         
-      Serial.println(buf);
-    
+      //Serial.println(buf);
+      
+      digitalWrite(RF_POWER_PIN, HIGH); // power up the transmitter
       digitalWrite(DEBUG_LED_TX, true); // Flash a light to show transmitting
       vw_send((uint8_t *)buf, strlen(buf));
       vw_wait_tx(); // Wait until the whole message is gone
       digitalWrite(DEBUG_LED_TX, false);
-      
+      digitalWrite(RF_POWER_PIN, LOW); // power down the transmitter
       count++;
     }
     
