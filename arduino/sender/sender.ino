@@ -72,6 +72,23 @@ void isrPirDown()
   }
 }
 
+/**
+ * The SecretVoltmeter 
+ * @see https://code.google.com/p/tinkerit/wiki/SecretVoltmeter
+ */
+long readVcc() {
+  long result;
+  // Read 1.1V reference against AVcc
+  ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
+  delay(2); // Wait for Vref to settle
+  ADCSRA |= _BV(ADSC); // Convert
+  while (bit_is_set(ADCSRA,ADSC));
+  result = ADCL;
+  result |= ADCH<<8;
+  result = 1126400L / result; // Back-calculate AVcc in mV
+  return result;
+}
+
 void setup()
 {
     pinMode(DEBUG_LED_TX, OUTPUT);
@@ -143,15 +160,17 @@ void loop()
       
     if (bitRead(flags, F_UP) || bitRead(flags, F_DOWN) || pulse) { 
       char buf[50];
-      sprintf(buf, "count=%lu,flags=%u", count, flags); 
-   
+      sprintf(buf, "count=%lu,mv=%u,flags=%u", count, readVcc(), flags); 
+
       if (bitRead(flags, F_UP)) { 
-        strcat (buf, " UP ");
+        strcat(buf, " UP ");
       }
       
       if (bitRead(flags, F_DOWN)) { 
-        strcat (buf, " DOWN ");
+        strcat(buf, " DOWN ");
       }
+        
+      
         
       //Serial.println(buf);
       
