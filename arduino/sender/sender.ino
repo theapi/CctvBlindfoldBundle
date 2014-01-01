@@ -8,7 +8,9 @@
 */
 
 #include <VirtualWire.h>
-
+// http://www.nongnu.org/avr-libc/user-manual/group__avr__power.html
+#include <avr/power.h>
+#include <avr/sleep.h>
 
 // @see http://www.airspayce.com/mikem/arduino/VirtualWire_8h.html
 #define RF_TX_PIN 9    // Pin 12 is the default sender pin so change it here.
@@ -35,41 +37,91 @@ long pirReset = 3000; // How long to ignore further detects.
 long lastPirUp = 0;
 long lastPirDown = 0;
 
-boolean pulse = false;
+volatile boolean pulse = false;
 
 
 // Store the pir states on interupt.
 volatile byte flags = 0;
 
-// Interupt on PIR_UP_PIN pin gone high.
+// Interupt on PIR_UP_PIN
 void isrPirUp() 
 {
   // Motion detected.
   bitSet(flags, F_UP);
   bitSet(flags, F_UP_STAT);
   
+  /*
   // Cannot detect both at once, so see if the other fired too.
   if (!bitRead(flags, F_DOWN_STAT)) {
     if (digitalRead(PIR_DOWN_PIN) == HIGH) {
       isrPirDown();
     }
   }
+  */
   
 }
 
-// Interupt on PIR_DOWN_PIN pin gone high.
+// Interupt on PIR_DOWN_PIN
 void isrPirDown() 
 {
   // Motion detected.
   bitSet(flags, F_DOWN);
   bitSet(flags, F_DOWN_STAT);
   
+  /*
   // Cannot detect both at once, so see if the other fired too.
   if (!bitRead(flags, F_UP_STAT)) {
     if (digitalRead(PIR_UP_PIN) == HIGH) {
       isrPirUp();
     }
   }
+  */
+}
+
+/**
+ * @see http://forum.arduino.cc/index.php/topic,85627.0.html
+ */
+void sleepNow()
+{
+  /* Now is the time to set the sleep mode. In the Atmega8 datasheet
+   * http://www.atmel.com/dyn/resources/prod_documents/doc2486.pdf on page 35
+   * there is a list of sleep modes which explains which clocks and 
+   * wake up sources are available in which sleep modus.
+   *
+   * In the avr/sleep.h file, the call names of these sleep modus are to be found:
+   *
+   * The 5 different modes are:
+   *     SLEEP_MODE_IDLE         -the least power savings 
+   *     SLEEP_MODE_ADC
+   *     SLEEP_MODE_PWR_SAVE
+   *     SLEEP_MODE_STANDBY
+   *     SLEEP_MODE_PWR_DOWN     -the most power savings
+   *
+   *  the power reduction management <avr/power.h>  is described in 
+   *  http://www.nongnu.org/avr-libc/user-manual/group__avr__power.html
+   */
+
+  set_sleep_mode(SLEEP_MODE_PWR_DOWN);   // sleep mode is set here
+
+  sleep_enable();          // enables the sleep bit in the mcucr register
+  // so sleep is possible. just a safety pin 
+
+  power_adc_disable();
+  power_spi_disable();
+  power_timer0_disable();
+  power_timer1_disable();
+  power_timer2_disable();
+  power_twi_disable();
+
+
+  sleep_mode();            // here the device is actually put to sleep!!
+
+  // THE PROGRAM CONTINUES FROM HERE AFTER WAKING UP
+  sleep_disable();         // first thing after waking from sleep:
+  // disable sleep...
+
+  power_all_enable();
+
 }
 
 /**
@@ -78,6 +130,10 @@ void isrPirDown()
  */
 long readVcc() {
   long result;
+  
+  // Power up the adc so the volts can be read.
+  //power_adc_enable();
+  
   // Read 1.1V reference against AVcc
   ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
   delay(2); // Wait for Vref to settle
@@ -86,11 +142,27 @@ long readVcc() {
   result = ADCL;
   result |= ADCH<<8;
   result = 1126400L / result; // Back-calculate AVcc in mV
+  
+  // Turn off the adc again to save power.
+  //power_adc_disable();
+  
   return result;
+}
+
+void transmit(char *buf) {
+  digitalWrite(RF_POWER_PIN, HIGH); // power up the transmitter
+  digitalWrite(DEBUG_LED_TX, true); // Flash a light to show transmitting
+  vw_send((uint8_t *)buf, strlen(buf));
+  vw_wait_tx(); // Wait until the whole message is gone
+  digitalWrite(DEBUG_LED_TX, false);
+  digitalWrite(RF_POWER_PIN, LOW); // power down the transmitter 
 }
 
 void setup()
 {
+    // @see http://forum.arduino.cc/index.php/topic,85627.0.html
+    //power_adc_disable();
+    
     pinMode(DEBUG_LED_TX, OUTPUT);
     pinMode(DEBUG_LED_PULSE, OUTPUT);
     pinMode(DEBUG_LED_MOTION, OUTPUT);
@@ -118,7 +190,38 @@ void setup()
 
 }
 
-void loop()
+void loop() 
+{
+  sleepNow();
+  
+  // Movement detected
+  if (bitRead(flags, F_UP_STAT)) {
+    bitClear(flags, F_UP_STAT);
+    bitClear(flags, F_UP);
+    digitalWrite(DEBUG_LED_MOTION, HIGH);
+    
+    char buf[50];
+    sprintf(buf, "c=%lu,F_UP_STAT", count);
+    transmit(buf);
+    
+    count++;
+    
+  } else if (bitRead(flags, F_DOWN_STAT)) {
+    bitClear(flags, F_DOWN_STAT);
+    bitClear(flags, F_DOWN);
+    digitalWrite(DEBUG_LED_MOTION, HIGH);
+    
+    char buf[50];
+    sprintf(buf, "c=%lu,F_DOWN_STAT", count);
+    transmit(buf);
+    
+    count++;
+    
+  }
+
+}
+
+void XXloop()
 {
   
   unsigned long currentMillis = millis();
@@ -130,7 +233,7 @@ void loop()
     digitalWrite(DEBUG_LED_PULSE, pulse);
     
 
-    // Can't set use millis in the interupt.
+    // Initial movement detected
     if (bitRead(flags, F_UP_STAT)) {
       lastPirUp = currentMillis;
       //Serial.println("UP on");
@@ -138,12 +241,14 @@ void loop()
       digitalWrite(DEBUG_LED_MOTION, HIGH);
     }
     
+    // Initial movement detected
     if (bitRead(flags, F_DOWN_STAT)) {
       lastPirDown = currentMillis;
       //Serial.println("DOWN on");
       bitClear(flags, F_DOWN_STAT);
       digitalWrite(DEBUG_LED_MOTION, HIGH);
     }
+    
 
     
     if (bitRead(flags, F_UP) && currentMillis - lastPirUp > pirReset) {
@@ -159,8 +264,10 @@ void loop()
     }
       
     if (bitRead(flags, F_UP) || bitRead(flags, F_DOWN) || pulse) { 
+    //if (pulse) {
       char buf[50];
-      sprintf(buf, "count=%lu,mv=%u,flags=%u", count, readVcc(), flags); 
+      sprintf(buf, "count=%lu,mv=%u,currentMillis=%lu", count, readVcc(), currentMillis); 
+      //sprintf(buf, "count=%lu,flags=%u", count, flags); 
 
       if (bitRead(flags, F_UP)) { 
         strcat(buf, " UP ");
@@ -174,12 +281,16 @@ void loop()
         
       //Serial.println(buf);
       
+      /*
       digitalWrite(RF_POWER_PIN, HIGH); // power up the transmitter
       digitalWrite(DEBUG_LED_TX, true); // Flash a light to show transmitting
       vw_send((uint8_t *)buf, strlen(buf));
       vw_wait_tx(); // Wait until the whole message is gone
       digitalWrite(DEBUG_LED_TX, false);
       digitalWrite(RF_POWER_PIN, LOW); // power down the transmitter
+      */
+      transmit(buf);
+      
       count++;
     }
     
