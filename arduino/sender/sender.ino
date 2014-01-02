@@ -131,6 +131,11 @@ void isrMotion() {
 
 void setup()
 {
+  
+    for (byte i=0; i<20; i++) {
+        pinMode(i, INPUT);        //make all pins input pins
+        digitalWrite(i, HIGH);    //with pullup resistors to minimize power consumption
+    }
    
     pinMode(DEBUG_LED_TX, OUTPUT);
     pinMode(DEBUG_LED_MOTION, OUTPUT);
