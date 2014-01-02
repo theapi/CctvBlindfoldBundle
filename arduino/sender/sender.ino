@@ -212,7 +212,7 @@ void loop()
       //digitalWrite(DEBUG_LED_MOTION, HIGH);
       
       char buf[50];
-      sprintf(buf, "c=%lu,F_DOWN_STAT", count);
+      sprintf(buf, "c=%lu,mv=%u,F_DOWN_STAT", count, readVcc());
       transmit(buf);
       
       count++;
@@ -220,7 +220,7 @@ void loop()
       //digitalWrite(DEBUG_LED_MOTION, HIGH);
     
       char buf[50];
-      sprintf(buf, "c=%lu,F_UP_STAT", count);
+      sprintf(buf, "c=%lu,mv=%u,F_UP_STAT", count, readVcc());
       transmit(buf);
       
       count++;
