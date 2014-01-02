@@ -43,13 +43,23 @@ volatile boolean pulse = false;
 // Store the pir states on interupt.
 volatile byte flags = 0;
 
+volatile byte motionUp = 0;
+volatile byte motionDown = 0;
+
+volatile byte motion = 0;
+
+// Motion on either interupt
+void isrMotion() {
+  motion = 1;
+}
+
 // Interupt on PIR_UP_PIN
 void isrPirUp() 
 {
   // Motion detected.
   bitSet(flags, F_UP);
   bitSet(flags, F_UP_STAT);
-  
+  motionUp = 1;
   /*
   // Cannot detect both at once, so see if the other fired too.
   if (!bitRead(flags, F_DOWN_STAT)) {
@@ -67,6 +77,7 @@ void isrPirDown()
   // Motion detected.
   bitSet(flags, F_DOWN);
   bitSet(flags, F_DOWN_STAT);
+  motionDown = 1;
   
   /*
   // Cannot detect both at once, so see if the other fired too.
@@ -184,9 +195,10 @@ void setup()
     vw_set_tx_pin(RF_TX_PIN);
     vw_setup(2000);      // Bits per sec
     
-    
-    attachInterrupt(0, isrPirUp, RISING);
-    attachInterrupt(1, isrPirDown, RISING);
+    // Been having issues with two interupt pins seemingly setting each other off.
+    // so both call the same isr and only one motion is used.
+    attachInterrupt(0, isrMotion, RISING);
+    attachInterrupt(1, isrMotion, RISING);
 
 }
 
@@ -194,30 +206,87 @@ void loop()
 {
   sleepNow();
   
-  // Movement detected
-  if (bitRead(flags, F_UP_STAT)) {
-    bitClear(flags, F_UP_STAT);
-    bitClear(flags, F_UP);
-    digitalWrite(DEBUG_LED_MOTION, HIGH);
+  if (motion) {
     
+    if (digitalRead(PIR_DOWN_PIN) == HIGH) {
+      //digitalWrite(DEBUG_LED_MOTION, HIGH);
+      
+      char buf[50];
+      sprintf(buf, "c=%lu,F_DOWN_STAT", count);
+      transmit(buf);
+      
+      count++;
+    } else if (digitalRead(PIR_UP_PIN) == HIGH) {
+      //digitalWrite(DEBUG_LED_MOTION, HIGH);
+    
+      char buf[50];
+      sprintf(buf, "c=%lu,F_UP_STAT", count);
+      transmit(buf);
+      
+      count++;
+    }  
+    
+    // Motion delt with, reset to zero
+    motion = 0;
+  }
+  
+  /*
+  if (motionUp) {
+    motionUp = 0;
     char buf[50];
     sprintf(buf, "c=%lu,F_UP_STAT", count);
     transmit(buf);
     
     count++;
-    
-  } else if (bitRead(flags, F_DOWN_STAT)) {
-    bitClear(flags, F_DOWN_STAT);
-    bitClear(flags, F_DOWN);
-    digitalWrite(DEBUG_LED_MOTION, HIGH);
-    
+  }
+  
+  if (motionDown) {
+    motionDown = 0;
     char buf[50];
     sprintf(buf, "c=%lu,F_DOWN_STAT", count);
     transmit(buf);
     
     count++;
+  }
+  */
+  
+  /*
+  // Movement detected
+  if (bitRead(flags, F_UP_STAT)) {
+    bitClear(flags, F_UP_STAT);
+    bitClear(flags, F_UP);
+    
+    if (digitalRead(PIR_UP_PIN) == HIGH) {
+      //digitalWrite(DEBUG_LED_MOTION, HIGH);
+    
+      char buf[50];
+      sprintf(buf, "c=%lu,F_UP_STAT", count);
+      transmit(buf);
+      
+      count++;
+    }
+    
+
+    
+  } 
+  
+  if (bitRead(flags, F_DOWN_STAT)) {
+    bitClear(flags, F_DOWN_STAT);
+    bitClear(flags, F_DOWN);
+    
+    if (digitalRead(PIR_DOWN_PIN) == HIGH) {
+      //digitalWrite(DEBUG_LED_MOTION, HIGH);
+      
+      char buf[50];
+      sprintf(buf, "c=%lu,F_DOWN_STAT", count);
+      transmit(buf);
+      
+      count++;
+    }
+    
     
   }
+  */
 
 }
 
