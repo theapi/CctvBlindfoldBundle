@@ -38,6 +38,9 @@ long timeout = 60000;
 volatile byte flags = 0;
 volatile byte motion = 0;
 
+volatile byte motionUp = 0;
+volatile byte motionDown = 0;
+
 /**
  * @see http://forum.arduino.cc/index.php/topic,85627.0.html
  */
@@ -114,7 +117,7 @@ void transmit(char *buf) {
   digitalWrite(DEBUG_LED_TX, HIGH); // Flash a light to show transmitting
   
   // Send multiple times in the hope it gets through.
-  for (byte i=0; i<4; i++) {
+  for (byte i=0; i<10; i++) {
     vw_send((uint8_t *)buf, strlen(buf));
     vw_wait_tx(); // Wait until the whole message is gone
     delay(500);
@@ -129,13 +132,22 @@ void isrMotion() {
   motion = 1;
 }
 
+void isrMotionUp() {
+  motionUp = 1;
+}
+
+void isrMotionDown() {
+  motionDown = 1;
+}
+
 void setup()
 {
-  
+  /*
     for (byte i=0; i<20; i++) {
         pinMode(i, INPUT);        //make all pins input pins
         digitalWrite(i, HIGH);    //with pullup resistors to minimize power consumption
     }
+    */
    
     pinMode(DEBUG_LED_TX, OUTPUT);
     pinMode(DEBUG_LED_MOTION, OUTPUT);
@@ -158,19 +170,51 @@ void setup()
     vw_setup(2000);      // Bits per sec
     
     // Been having issues with two interupt pins seemingly setting each other off.
-    // so both call the same isr and only one motion is used.
-    attachInterrupt(0, isrMotion, RISING);
-    attachInterrupt(1, isrMotion, RISING);
+    attachInterrupt(0, isrMotionUp, RISING);
+    attachInterrupt(1, isrMotionDown, RISING);
 
 }
 
 void loop() 
 {
   if (!bitRead(flags, F_DOWN) && !bitRead(flags, F_UP)) {
-    digitalWrite(DEBUG_LED_MOTION, LOW);
+    //digitalWrite(DEBUG_LED_MOTION, LOW);
     sleepNow();
   } else {
-    digitalWrite(DEBUG_LED_MOTION, HIGH);
+    //digitalWrite(DEBUG_LED_MOTION, HIGH);
+  }
+
+  
+  if (motionDown) {
+      // Has the other pir recently detected motion
+      if (bitRead(flags, F_UP)) {
+        // Report that someone just went down stairs.
+        transmitId++;
+        char buf[50];
+        sprintf(buf, "id=%lu,mv=%u,d=DOWN", transmitId, readVcc());
+        transmit(buf);
+        bitClear(flags, F_UP);
+        bitClear(flags, F_DOWN);
+      } else {
+        // Remember that it happened
+        bitSet(flags, F_DOWN);
+      }
+    motionDown = 0;
+  } else if (motionUp) {
+    // Has the other pir recently detected motion
+      if (bitRead(flags, F_DOWN)) {
+        // Report that someone just went up stairs.
+        transmitId++;
+        char buf[50];
+        sprintf(buf, "id=%lu,mv=%u,d=UP", transmitId, readVcc());
+        transmit(buf);
+        bitClear(flags, F_DOWN);
+        bitClear(flags, F_UP);
+      } else {
+        // Remember that it happened
+        bitSet(flags, F_UP);
+      }
+    motionUp = 0;
   }
   
   // Wait a while waiting for the next pir to detect 
@@ -180,7 +224,7 @@ void loop()
      bitClear(flags, F_DOWN);
   }
   
-  
+  /*
   if (motion) {
     motionTime = currentMillis;
     
@@ -224,6 +268,7 @@ void loop()
     // Motion delt with, reset to zero
     motion = 0;
   }
+  */
  
 }
 
