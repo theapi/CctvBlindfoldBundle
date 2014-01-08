@@ -17,7 +17,7 @@
 #include <VirtualWire.h>
 
 #define SONAR_NUM     2 // Number of sensors.
-#define MAX_DISTANCE 700 // Maximum distance (in cm) to ping.
+#define MAX_DISTANCE 50 // Maximum distance (in cm) to ping.
 #define PING_INTERVAL 33 // Milliseconds between sensor pings (29ms is about the min to avoid cross-sensor echo).
 
 // Flags definitions
@@ -41,7 +41,6 @@ const byte PIN_ECHO_RIGHT = 6;  // Listen for the right ping's echo.
 
 // Debug leds
 const byte PIN_DEBUG_MOTION = 13; // The PIR detected motion.
-const byte PIN_DEBUG_RF_TX = 11; 
  
 unsigned long msgId = 0;        // Each transmission has an id so the receiver knows if it missed something.
 unsigned long lastTransmit = 0; // The last time a transmission was sent.
@@ -181,7 +180,14 @@ void setup()
   bitClear(flags, F_LEFT);
   bitClear(flags, F_RIGHT);
   
+  pinMode(PIN_PIR, INPUT);
+  
+  pinMode(PIN_RF_POWER, OUTPUT);
   pinMode(PIN_PING_POWER, OUTPUT);
+  
+  pinMode(PIN_DEBUG_MOTION, OUTPUT);
+  
+  
   
   vw_set_tx_pin(PIN_RF_TX);
   vw_setup(2000);      // Bits per sec
@@ -190,7 +196,7 @@ void setup()
   for (uint8_t i = 1; i < SONAR_NUM; i++) // Set the starting time for each sensor.
     pingTimer[i] = pingTimer[i - 1] + PING_INTERVAL;
     
-  // Add the external interupt to the PIR.
+  // Attach the external interupt to the PIR.
   attachInterrupt(0, isrMotion, RISING);
     
 }
@@ -210,17 +216,25 @@ void loop()
     pingPowerState = 1;
     // Turn on the ping power.
     digitalWrite(PIN_PING_POWER, HIGH);
+    // Turn on the rf power.
+    digitalWrite(PIN_RF_POWER, HIGH);
+    
+    // Turn on the debug light.
+    digitalWrite(PIN_DEBUG_MOTION, HIGH);   
   }
   
   if (pingPowerState == 0) {
     // Turn off the power to the ping sensors.
     digitalWrite(PIN_PING_POWER, LOW);
+    // Turn off the rf power.
+    digitalWrite(PIN_RF_POWER, LOW);
     
-    // Deep sleep until the next motion.
+    // Turn off the debug light.
+    digitalWrite(PIN_DEBUG_MOTION, LOW);
+
+    // Sleep until the next motion.
     sleepNow();
   } 
-  
-  
   
   
   // PING )))
@@ -236,22 +250,18 @@ void loop()
   }
   
   // Other code that *DOESN'T* analyze ping results can go here.
-  /*
-  if (millis() - lastTransmit > 1000) {
-    // Proof of concept to power cycle the pings
-    pingPowerState =!pingPowerState;
-    digitalWrite(PIN_PING_POWER, pingPowerState);
-    
+  
+  long nowMillis = millis();
+  
+  if (nowMillis - lastTransmit > 1000) {
     msgId++;
     char buf[50];
     sprintf(buf, "id=%lu", msgId);
-    
     transmit(buf); 
   }
-  */
   
   
-  if (millis() - awakeTime > powerTimeout) {
+  if (nowMillis - awakeTime > powerTimeout) {
     //TODO: and not waiting for second sensor
     
     // Powerdown at the start of the next loop
