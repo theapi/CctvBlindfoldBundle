@@ -5,6 +5,10 @@
 
 */
 
+// http://www.nongnu.org/avr-libc/user-manual/group__avr__power.html
+#include <avr/power.h>
+#include <avr/sleep.h>
+
 // NewPing uses timer 2 and switches pinging between sensors
 // @see https://code.google.com/p/arduino-new-ping/
 #include <NewPing.h>
@@ -18,7 +22,10 @@
 #define PING_INTERVAL 33 // Milliseconds between sensor pings (29ms is about the min to avoid cross-sensor echo).
 
 // Pins
+const byte PIN_PIR = 2;         // PIR on external interupt to wake up the cpu, int.0 interupt 0 on pin 2
+
 const byte PIN_RF_TX = 9;       // Pin 12 is the default sender pin but I want 9.
+const byte PIN_RF_POWER = 10;   // Provide power to the transmitter
 const byte PIN_PING_POWER = 14; // Controls the transistor switch for both ping sensors.
 
 const byte PIN_TRIG_LEFT = 7;   // Send the ping on the left sensor.
@@ -27,10 +34,14 @@ const byte PIN_ECHO_LEFT = 8;   // Listen for the left ping's echo.
 const byte PIN_TRIG_RIGHT = 5;  // Send the ping on the right sensor.
 const byte PIN_ECHO_RIGHT = 6;  // Listen for the right ping's echo.
 
-byte pingPowerState = 1;        // 0 = sensor off, 1 = sensor on.
+// Debug leds
+const byte PIN_DEBUG_MOTION = 13; // The PIR detected motion.
+const byte PIN_DEBUG_RF_TX = 11; 
  
 unsigned long msgId = 0;        // Each transmission has an id so the receiver knows if it missed something.
 unsigned long lastTransmit = 0; // The last time a transmission was sent.
+
+long powerTimeout = 60000;      // Time to wait in milliseconds to power down if no detection.
  
 unsigned long pingTimer[SONAR_NUM]; // Holds the times when the next ping should happen for each sensor.
 unsigned int cm[SONAR_NUM];         // Where the ping distances are stored.
@@ -41,6 +52,74 @@ NewPing sonar[SONAR_NUM] = {     // Sensor object array.
   NewPing(PIN_TRIG_RIGHT, PIN_ECHO_RIGHT, MAX_DISTANCE),
 };
 
+volatile byte pingPowerState = 0;     // 0 = ping off, 1 = ping on.
+volatile unsigned long awakeTime = 0; // How long the cpu has been awake since last wake up.
+
+
+/**
+ * @see http://forum.arduino.cc/index.php/topic,85627.0.html
+ */
+void sleepNow()
+{
+  /* Now is the time to set the sleep mode. In the Atmega8 datasheet
+   * http://www.atmel.com/dyn/resources/prod_documents/doc2486.pdf on page 35
+   * there is a list of sleep modes which explains which clocks and 
+   * wake up sources are available in which sleep modus.
+   *
+   * In the avr/sleep.h file, the call names of these sleep modus are to be found:
+   *
+   * The 5 different modes are:
+   *     SLEEP_MODE_IDLE         -the least power savings 
+   *     SLEEP_MODE_ADC
+   *     SLEEP_MODE_PWR_SAVE
+   *     SLEEP_MODE_STANDBY
+   *     SLEEP_MODE_PWR_DOWN     -the most power savings
+   *
+   *  the power reduction management <avr/power.h>  is described in 
+   *  http://www.nongnu.org/avr-libc/user-manual/group__avr__power.html
+   */
+
+  set_sleep_mode(SLEEP_MODE_PWR_DOWN);   // sleep mode is set here
+
+  sleep_enable();          // enables the sleep bit in the mcucr register
+  // so sleep is possible. just a safety pin 
+
+  power_adc_disable();
+  power_spi_disable();
+  power_timer0_disable();
+  power_timer1_disable();
+  power_timer2_disable();
+  power_twi_disable();
+
+
+  sleep_mode();            // here the device is actually put to sleep!!
+
+  // THE PROGRAM CONTINUES FROM HERE AFTER WAKING UP
+  sleep_disable();         // first thing after waking from sleep:
+  // disable sleep...
+
+  power_all_enable();
+
+}
+
+/**
+ * The SecretVoltmeter 
+ * @see https://code.google.com/p/tinkerit/wiki/SecretVoltmeter
+ */
+long readVcc() {
+  long result;
+  
+  // Read 1.1V reference against AVcc
+  ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
+  delay(2); // Wait for Vref to settle
+  ADCSRA |= _BV(ADSC); // Convert
+  while (bit_is_set(ADCSRA,ADSC));
+  result = ADCL;
+  result |= ADCH<<8;
+  result = 1126400L / result; // Back-calculate AVcc in mV
+  
+  return result;
+}
 
 /**
  * Transmit the message.
@@ -78,6 +157,16 @@ void oneSensorCycle()
   }
   Serial.println();
   
+}
+
+/*
+ * ISR for pin 2 (int.0)
+ */
+void isrMotion() {
+  // Tell the loop to power up the ping sensors.
+  pingPowerState = 1;
+  // Rest the awake time.
+  awakeTime = 0;
 }
 
 void setup() 
