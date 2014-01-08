@@ -1,8 +1,7 @@
 /*
-
  Sleep until motion is detectected,
  then turn on the two ping sensors which detect if someone goes past and in which direction.
-
+ Transmit the detected direction.
 */
 
 // http://www.nongnu.org/avr-libc/user-manual/group__avr__power.html
@@ -20,6 +19,12 @@
 #define SONAR_NUM     2 // Number of sensors.
 #define MAX_DISTANCE 700 // Maximum distance (in cm) to ping.
 #define PING_INTERVAL 33 // Milliseconds between sensor pings (29ms is about the min to avoid cross-sensor echo).
+
+// Flags definitions
+#define F_MOTION 1 // 1 = activated  0 = no movement
+#define F_LEFT   2 // 1 = detection  0 = no detection
+#define F_RIGHT  3 // 1 = detection  0 = no detection
+
 
 // Pins
 const byte PIN_PIR = 2;         // PIR on external interupt to wake up the cpu, int.0 interupt 0 on pin 2
@@ -52,8 +57,10 @@ NewPing sonar[SONAR_NUM] = {     // Sensor object array.
   NewPing(PIN_TRIG_RIGHT, PIN_ECHO_RIGHT, MAX_DISTANCE),
 };
 
+byte flags = 0; // Booleans
+
 volatile byte pingPowerState = 0;     // 0 = ping off, 1 = ping on.
-volatile unsigned long awakeTime = 0; // How long the cpu has been awake since last wake up.
+volatile unsigned long awakeTime = 0; // When the cpu woke up.
 
 
 /**
@@ -163,15 +170,16 @@ void oneSensorCycle()
  * ISR for pin 2 (int.0)
  */
 void isrMotion() {
-  // Tell the loop to power up the ping sensors.
-  pingPowerState = 1;
-  // Rest the awake time.
-  awakeTime = 0;
+  bitSet(flags, F_MOTION);
 }
 
 void setup() 
 {
   Serial.begin(115200);
+  
+  bitClear(flags, F_MOTION);
+  bitClear(flags, F_LEFT);
+  bitClear(flags, F_RIGHT);
   
   pinMode(PIN_PING_POWER, OUTPUT);
   
@@ -182,10 +190,39 @@ void setup()
   for (uint8_t i = 1; i < SONAR_NUM; i++) // Set the starting time for each sensor.
     pingTimer[i] = pingTimer[i - 1] + PING_INTERVAL;
     
+  // Add the external interupt to the PIR.
+  attachInterrupt(0, isrMotion, RISING);
+    
 }
 
 void loop() 
 {
+  
+  // The motion ISR sets a flag so we know it detected motion.
+  if (bitRead(flags, F_MOTION)) {
+    bitClear(flags, F_MOTION);
+    if (pingPowerState == 0) {
+      // Remember when the cpu woke up.
+      awakeTime = millis();
+    }
+    
+    // Ensure the ping sensors are powered.
+    pingPowerState = 1;
+    // Turn on the ping power.
+    digitalWrite(PIN_PING_POWER, HIGH);
+  }
+  
+  if (pingPowerState == 0) {
+    // Turn off the power to the ping sensors.
+    digitalWrite(PIN_PING_POWER, LOW);
+    
+    // Deep sleep until the next motion.
+    sleepNow();
+  } 
+  
+  
+  
+  
   // PING )))
   for (uint8_t i = 0; i < SONAR_NUM; i++) { // Loop through all the sensors.
     if (millis() >= pingTimer[i]) {         // Is it this sensor's time to ping?
@@ -199,7 +236,7 @@ void loop()
   }
   
   // Other code that *DOESN'T* analyze ping results can go here.
-  
+  /*
   if (millis() - lastTransmit > 1000) {
     // Proof of concept to power cycle the pings
     pingPowerState =!pingPowerState;
@@ -210,6 +247,15 @@ void loop()
     sprintf(buf, "id=%lu", msgId);
     
     transmit(buf); 
+  }
+  */
+  
+  
+  if (millis() - awakeTime > powerTimeout) {
+    //TODO: and not waiting for second sensor
+    
+    // Powerdown at the start of the next loop
+    pingPowerState = 0;
   }
   
 }
