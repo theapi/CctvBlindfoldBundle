@@ -24,7 +24,10 @@
 #define F_MOTION 1 // 1 = activated  0 = no movement
 #define F_LEFT   2 // 1 = detection  0 = no detection
 #define F_RIGHT  3 // 1 = detection  0 = no detection
+#define F_ACTIVE_LEFT   4 // 1 = detection  0 = no detection
+#define F_ACTIVE_RIGHT  5 // 1 = detection  0 = no detection
 
+const byte DISTANCE_THRESHOLD = 40; // Less than this (in cm) activates the detection sequence.
 
 // Pins
 const byte PIN_PIR = 2;         // PIR on external interupt to wake up the cpu, int.0 interupt 0 on pin 2
@@ -39,9 +42,12 @@ const byte PIN_ECHO_LEFT = 8;   // Listen for the left ping's echo.
 const byte PIN_TRIG_RIGHT = 5;  // Send the ping on the right sensor.
 const byte PIN_ECHO_RIGHT = 6;  // Listen for the right ping's echo.
 
+
 // Debug leds
 const byte PIN_DEBUG_MOTION = 13; // The PIR detected motion.
  
+const byte RF_ID = 1;           // The unique id of this device, so the receive knows where it came from.
+
 unsigned long msgId = 0;        // Each transmission has an id so the receiver knows if it missed something.
 unsigned long lastTransmit = 0; // The last time a transmission was sent.
 
@@ -58,7 +64,7 @@ NewPing sonar[SONAR_NUM] = {     // Sensor object array.
 
 byte flags = 0; // Booleans
 
-volatile byte pingPowerState = 0;     // 0 = ping off, 1 = ping on.
+volatile byte powerState = 0;     // 0 = ping off, 1 = ping on.
 volatile unsigned long awakeTime = 0; // When the cpu woke up.
 
 
@@ -128,6 +134,19 @@ long readVcc() {
 }
 
 /**
+ * Create a transmition message
+ */
+void createTransmitionMsg(char *movementDirection)
+{
+  msgId++;
+  char buf[30];
+  // Device rf id, message id, direction char, volts
+  sprintf(buf, "%u,%lu,%c,%lu", RF_ID, msgId, movementDirection, readVcc());
+  // TODO queue message for transmition multiple times.
+  transmit(buf); // just send it for now.
+}
+
+/**
  * Transmit the message.
  */
 void transmit(char *buf) 
@@ -163,6 +182,67 @@ void oneSensorCycle()
   }
   Serial.println();
   
+  // Check for activation.
+  if (cm[0] < DISTANCE_THRESHOLD) {
+    // Flag that it happend.
+    bitSet(flags, F_LEFT);
+  } else {
+    bitClear(flags, F_LEFT);
+  }
+  if (cm[1] < DISTANCE_THRESHOLD) {
+    // Flag that it happend.
+    bitSet(flags, F_RIGHT);
+  } else {
+    bitClear(flags, F_RIGHT); 
+  }
+  
+  handlePingFlags();
+}
+
+void handlePingFlags()
+{
+  if (!bitRead(flags, F_LEFT) && !bitRead(flags, F_RIGHT)) {
+    
+    // Waiting for activation.
+    return;
+    
+  } else if (bitRead(flags, F_LEFT) && bitRead(flags, F_RIGHT)) {
+    
+    // Both beams are broken
+    return;
+    
+  } else if (bitRead(flags, F_LEFT)) {
+    
+    // Left beam is broken only
+    if (bitRead(flags, F_ACTIVE_RIGHT)) {
+      // Right beam was activate first.
+      bitClear(flags, F_ACTIVE_RIGHT);
+      
+      // Send left < right message
+      createTransmitionMsg("<");
+      
+    } else {
+      // Start of activation.
+      bitSet(flags, F_ACTIVE_LEFT);
+    }
+  
+  } else if (bitRead(flags, F_RIGHT)) {
+    
+    // Right beam is broken only
+    if (bitRead(flags, F_ACTIVE_LEFT)) {
+      // Left beam was activate first.
+      bitClear(flags, F_ACTIVE_LEFT);
+      
+      // Send left > right message
+      createTransmitionMsg(">");
+      
+    } else {
+      // Start of activation.
+      bitSet(flags, F_ACTIVE_RIGHT);
+    }
+    
+  }
+
 }
 
 /*
@@ -176,9 +256,8 @@ void setup()
 {
   Serial.begin(115200);
   
-  bitClear(flags, F_MOTION);
-  bitClear(flags, F_LEFT);
-  bitClear(flags, F_RIGHT);
+  // Zero all the flags.
+  flags = 0;
   
   pinMode(PIN_PIR, INPUT);
   
@@ -207,13 +286,13 @@ void loop()
   // The motion ISR sets a flag so we know it detected motion.
   if (bitRead(flags, F_MOTION)) {
     bitClear(flags, F_MOTION);
-    if (pingPowerState == 0) {
+    if (powerState == 0) {
       // Remember when the cpu woke up.
       awakeTime = millis();
     }
     
     // Ensure the ping sensors are powered.
-    pingPowerState = 1;
+    powerState = 1;
     // Turn on the ping power.
     digitalWrite(PIN_PING_POWER, HIGH);
     // Turn on the rf power.
@@ -223,7 +302,7 @@ void loop()
     digitalWrite(PIN_DEBUG_MOTION, HIGH);   
   }
   
-  if (pingPowerState == 0) {
+  if (powerState == 0) {
     // Turn off the power to the ping sensors.
     digitalWrite(PIN_PING_POWER, LOW);
     // Turn off the rf power.
@@ -232,6 +311,9 @@ void loop()
     // Turn off the debug light.
     digitalWrite(PIN_DEBUG_MOTION, LOW);
 
+    // Zero all the flags.
+    flags = 0;
+  
     // Sleep until the next motion.
     sleepNow();
   } 
@@ -265,7 +347,7 @@ void loop()
     //TODO: and not waiting for second sensor
     
     // Powerdown at the start of the next loop
-    pingPowerState = 0;
+    powerState = 0;
   }
   
 }
