@@ -205,7 +205,7 @@ void processMsgQueue()
     // Time to send another transmition if one is waiting.
     byte oldestIndex = getOldestMsqQueueIndex(); 
     // Check for a message.
-    if (strlen(msgQueue[oldestIndex]) == 0) {
+    if (msgQueue[oldestIndex][0] == 0) { // First character is zero.
       // nothing to do.
       return;
     }
