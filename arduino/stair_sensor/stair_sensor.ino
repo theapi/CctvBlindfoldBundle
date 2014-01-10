@@ -425,6 +425,7 @@ void loop()
     transmit(buf); 
   }
   
+  processMsgQueue();
   
   if (nowMillis - awakeTime > powerTimeout) {
     //TODO: and not waiting for second sensor
