@@ -27,6 +27,11 @@
 #define F_ACTIVE_LEFT   4 // 1 = detection  0 = no detection
 #define F_ACTIVE_RIGHT  5 // 1 = detection  0 = no detection
 
+#define MSG_BUFFER_LEN   30    // How long the transmitted message can be.
+#define MSG_QUEUE_LENGTH 3     // How many transmission message to store.
+#define MSG_TRANSMIT_NUM 5     // How many times to transmit each message.
+#define MSG_TRANSMIT_DELAY 100 // How long to wait before sending the next message.
+
 const byte DISTANCE_THRESHOLD = 40; // Less than this (in cm) activates the detection sequence.
 
 // Pins
@@ -50,6 +55,9 @@ const byte RF_ID = 1;           // The unique id of this device, so the receive 
 
 unsigned long msgId = 0;        // Each transmission has an id so the receiver knows if it missed something.
 unsigned long lastTransmit = 0; // The last time a transmission was sent.
+char* msgQueue[MSG_QUEUE_LENGTH];
+unsigned long msgTime[MSG_QUEUE_LENGTH];
+byte msgTransmitted[MSG_QUEUE_LENGTH]; // Number of times the message has been transmitted.
 
 long powerTimeout = 60000;      // Time to wait in milliseconds to power down if no detection.
  
@@ -63,6 +71,8 @@ NewPing sonar[SONAR_NUM] = {     // Sensor object array.
 };
 
 byte flags = 0; // Booleans
+
+
 
 volatile byte powerState = 0;     // 0 = ping off, 1 = ping on.
 volatile unsigned long awakeTime = 0; // When the cpu woke up.
@@ -139,15 +149,82 @@ long readVcc() {
 void createTransmitionMsg(char *movementDirection)
 {
   msgId++;
-  char buf[30];
+  char buf[MSG_BUFFER_LEN];
   // Device rf id, message id, direction char, volts
   sprintf(buf, "%u,%lu,%c,%lu", RF_ID, msgId, movementDirection, readVcc());
   // TODO queue message for transmition multiple times.
-  transmit(buf); // just send it for now.
+  //transmit(buf); // just send it for now.
+  msgEnqueue(buf);
+}
+
+void msgEnqueue(char *buf) 
+{
+  unsigned long now = millis();
+  byte queued = 0;
+  for (uint8_t i = 0; i < MSG_QUEUE_LENGTH; i++) {
+    if (msgQueue[i][0] == 0) { // First character is zero.
+      msgQueue[i] = buf;
+      msgTime[i] = now;
+      queued = 1; // Managed to add to the queue.
+    }
+  }
+  
+  if (queued == 0) {
+    // Didn't get into the queue.
+    byte oldestIndex = getOldestMsqQueueIndex(); 
+
+    // Replace the oldest one
+    msgQueue[oldestIndex] = buf;
+    msgTime[oldestIndex] = now;
+  }
+}
+
+byte getOldestMsqQueueIndex()
+{
+  unsigned long now = millis();
+  long longestDiff = 0;
+  byte oldestIndex = 0;
+  // Find the oldest message.
+  for (uint8_t i = 0; i < MSG_QUEUE_LENGTH; i++) {
+    long diff = now - msgTime[i];
+    if (diff > longestDiff) {
+      longestDiff = diff;
+      oldestIndex = i;
+    }
+  }
+  
+  return oldestIndex;
 }
 
 /**
- * Transmit the message.
+ * Send the correct message for the correct number of times.
+ */
+void processMsgQueue()
+{
+  if (millis() - lastTransmit > MSG_TRANSMIT_DELAY) {
+    // Time to send another transmition if one is waiting.
+    byte oldestIndex = getOldestMsqQueueIndex(); 
+    // Check for a message.
+    if (strlen(msgQueue[oldestIndex]) == 0) {
+      // nothing to do.
+      return;
+    }
+
+    transmit(msgQueue[oldestIndex]);
+    msgTransmitted[oldestIndex]++;
+    
+    // If the message has been sent enough times, delete it.
+    if (msgTransmitted[oldestIndex] > MSG_TRANSMIT_NUM) {
+      char buf[MSG_BUFFER_LEN] = {0};
+      msgQueue[oldestIndex] = buf;
+      msgTime[oldestIndex] = 0;
+      msgTransmitted[oldestIndex] = 0;
+    }
+  }
+}
+
+/**
+ * Transmit a message.
  */
 void transmit(char *buf) 
 {
@@ -266,7 +343,13 @@ void setup()
   
   pinMode(PIN_DEBUG_MOTION, OUTPUT);
   
-  
+  // Init the message queue.
+  for (uint8_t i = 0; i < MSG_QUEUE_LENGTH; i++) {
+      char buf[MSG_BUFFER_LEN] = {0};
+      msgQueue[i] = buf;
+      msgTime[i] = 0;
+      msgTransmitted[i] = 0;
+  }
   
   vw_set_tx_pin(PIN_RF_TX);
   vw_setup(2000);      // Bits per sec
