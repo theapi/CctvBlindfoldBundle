@@ -4,6 +4,9 @@
  Transmit the detected direction.
 */
 
+// My attempt at a class to ittearate over a buffer.
+#include "RingBuffer.h"
+
 // http://www.nongnu.org/avr-libc/user-manual/group__avr__power.html
 #include <avr/power.h>
 #include <avr/sleep.h>
@@ -18,7 +21,8 @@
 
 #define SONAR_NUM     2 // Number of sensors.
 #define MAX_DISTANCE 50 // Maximum distance (in cm) to ping.
-#define PING_INTERVAL 33 // Milliseconds between sensor pings (29ms is about the min to avoid cross-sensor echo).
+#define PING_INTERVAL 50 // Milliseconds between sensor pings (29ms is about the min to avoid cross-sensor echo).
+#define PING_BUFFER_SIZE 3 // Remeber this many prvious pings for detecting falling edge & filtering.
 
 // Flags definitions
 #define F_MOTION 0 // 1 = activated  0 = no movement
@@ -67,6 +71,9 @@ long powerTimeout = 10000;      // Time to wait in milliseconds to power down if
 unsigned long pingTimer[SONAR_NUM]; // Holds the times when the next ping should happen for each sensor.
 unsigned int cm[SONAR_NUM];         // Where the ping distances are stored.
 uint8_t currentSensor = 0;          // Keeps track of which sensor is active.
+//uint8_t pingBuffer[PING_BUFFER_SIZE];  // Keeps track of previous pings
+RingBuffer<uint8_t> pingBufferLeft(PING_BUFFER_SIZE); // Keeps track of previous pings
+RingBuffer<uint8_t> pingBufferRight(PING_BUFFER_SIZE); // Keeps track of previous pings
 
 NewPing sonar[SONAR_NUM] = {     // Sensor object array.
   NewPing(PIN_TRIG_LEFT, PIN_ECHO_LEFT, MAX_DISTANCE), // Each sensor's trigger pin, echo pin, and max distance to ping.
@@ -77,6 +84,7 @@ volatile byte flags; // Booleans
 
 volatile byte powerState = 0;     // 0 = ping off, 1 = ping on.
 volatile unsigned long awakeTime = 0; // When the cpu woke up.
+
 
 
 /**
@@ -264,7 +272,7 @@ void echoCheck()
  */
 void oneSensorCycle() 
 {
-  
+  /*
   // The following code would be replaced with your code that does something with the ping results.
   for (uint8_t i = 0; i < SONAR_NUM; i++) {
     Serial.print(i);
@@ -273,8 +281,42 @@ void oneSensorCycle()
     Serial.print("cm ");
   }
   Serial.println();
+  */
+  
+  //Serial.print(0); Serial.print("="); Serial.print(cm[0]); Serial.print("cm "); Serial.println();
+  
+  pingBufferLeft.push(cm[0]);
+  pingBufferRight.push(cm[1]);
+  
+  /*
+  Serial.print(pingBufferLeft.currentIndex()); Serial.print(" : ");
+  Serial.print(pingBufferLeft.peek(0)); Serial.print(" : ");
+  Serial.print(pingBufferLeft.peek(1)); Serial.print(" : ");
+  Serial.print(pingBufferLeft.peek(2)); 
+  Serial.println();
+  */
+  
+  // Look for the "fallen edge", when the sensors has just been passed.
+  // Not the rising edge as the sensor will still be detecting.
+  
+  // Activate when 0cm after 2 non zero previous pings
+  int current = pingBufferLeft.current();
+  if (current == 0) {
+    if (pingBufferLeft.previous(0) > 0 && pingBufferLeft.previous(1) > 0) {
+      Serial.println("LEFT FELL");
+    }
+  }
+  
+  /*
+  int bi = pingBufferLeft.currentIndex();
+  int count = pingBufferLeft.count();
+  // previous reading
+  bi--;
+  if (bi < 0) bi = count -1;
+  */
   
   
+  /*
   // Check for activation.
   if (cm[0] > 0 && cm[0] < DISTANCE_THRESHOLD) {
     // Flag that it happend.
@@ -290,6 +332,7 @@ void oneSensorCycle()
   }
   
   handlePingFlags();
+  */
 }
 
 void handlePingFlags()
