@@ -279,6 +279,7 @@ void oneSensorCycle()
     bitClear(flags, F_FIRST_CYCLE);
     // Clear the ping buffers.
     pingBufferLeft.zero();
+    pingBufferRight.zero();
     return;
   }
   /*
@@ -292,7 +293,6 @@ void oneSensorCycle()
   Serial.println();
   */
   
-  //Serial.print(0); Serial.print("="); Serial.print(cm[0]); Serial.print("cm "); Serial.println();
   
   pingBufferLeft.push(cm[0]);
   pingBufferRight.push(cm[1]);
@@ -312,135 +312,28 @@ void oneSensorCycle()
   int current = pingBufferLeft.current();
   if (current == 0) {
     if (pingBufferLeft.previous(0) > 0 && pingBufferLeft.previous(1) > 0) {
-      Serial.print(pingBufferLeft.currentIndex()); Serial.print(" : ");
-  Serial.print(pingBufferLeft.peek(0)); Serial.print(" : ");
-  Serial.print(pingBufferLeft.peek(1)); Serial.print(" : ");
-  Serial.print(pingBufferLeft.peek(2)); 
-  Serial.println();
-      
       Serial.println("LEFT FELL");
-      
-      
-      
-    }
-  }
-  
-  /*
-  int bi = pingBufferLeft.currentIndex();
-  int count = pingBufferLeft.count();
-  // previous reading
-  bi--;
-  if (bi < 0) bi = count -1;
-  */
-  
-  
-  /*
-  // Check for activation.
-  if (cm[0] > 0 && cm[0] < DISTANCE_THRESHOLD) {
-    // Flag that it happend.
-    bitSet(flags, F_LEFT);
-  } else {
-    bitClear(flags, F_LEFT);
-  }
-  if (cm[1] > 0 && cm[1] < DISTANCE_THRESHOLD) {
-    // Flag that it happend.
-    bitSet(flags, F_RIGHT);
-  } else {
-    bitClear(flags, F_RIGHT); 
-  }
-  
-  handlePingFlags();
-  */
-}
-
-void handlePingFlags()
-{
-  unsigned long now = millis();
-  if (now - lastDirectionDetected > DIRECTION_DEBOUNCE_TIME) {
-  
-    Serial.print(flags, BIN); Serial.print(" - ");
-    
-    if (bitRead(flags, F_ACTIVE_RIGHT)) {
-      // Waiting for left.
-      if (bitRead(flags, F_LEFT)) {
-        
-        bitClear(flags, F_ACTIVE_LEFT);
-        bitClear(flags, F_ACTIVE_RIGHT);
-        bitClear(flags, F_RIGHT); 
-        bitClear(flags, F_LEFT); 
-        // Need to ignore for while to debounce ...
-        lastDirectionDetected = now;
+      if (bitRead(flags, F_ACTIVE_RIGHT)) {
         createTransmitionMsg('L');
+        bitClear(flags, F_ACTIVE_RIGHT); 
+      } else {
+        bitSet(flags, F_ACTIVE_LEFT); 
       }
-    } else if (bitRead(flags, F_ACTIVE_LEFT)) {
-      // Waiting for right.
-      if (bitRead(flags, F_RIGHT)) {
-        
-        bitClear(flags, F_ACTIVE_LEFT);
-        bitClear(flags, F_ACTIVE_RIGHT);
-        bitClear(flags, F_RIGHT); 
-        bitClear(flags, F_LEFT);
-        // Need to ignore for while to debounce ...
-        lastDirectionDetected = now;
+    }
+  }
+  current = pingBufferRight.current();
+  if (current == 0) {
+    if (pingBufferRight.previous(0) > 0 && pingBufferRight.previous(1) > 0) {
+      Serial.println("RIGHT FELL");
+      if (bitRead(flags, F_ACTIVE_LEFT)) {
         createTransmitionMsg('R');
+        bitClear(flags, F_ACTIVE_LEFT); 
+      } else {
+        bitSet(flags, F_ACTIVE_RIGHT); 
       }
-    } else if (bitRead(flags, F_RIGHT)) {
-      bitSet(flags, F_ACTIVE_RIGHT);
-      bitClear(flags, F_RIGHT);
-    } else if (bitRead(flags, F_LEFT)) {
-      bitSet(flags, F_ACTIVE_LEFT);
-      bitClear(flags, F_LEFT);
     }
-    
-    Serial.println(flags, BIN);
   }
-  
-  /*
-  if (!bitRead(flags, F_LEFT) && !bitRead(flags, F_RIGHT)) {
-    // Waiting for activation.
-    return;
-    
-  } else if (bitRead(flags, F_LEFT) && bitRead(flags, F_RIGHT)) {
-    
-    // Both beams are broken
-    return;
-    
-  } else 
-  */
-  /*
-  if (bitRead(flags, F_LEFT)) {
-    
-    // Left beam is broken only
-    if (bitRead(flags, F_ACTIVE_RIGHT)) {
-      // Right beam was activate first.
-      bitClear(flags, F_ACTIVE_RIGHT);
-      
-      // Send left < right message
-      createTransmitionMsg('L');
-      
-    } else {
-      // Start of activation.
-      bitSet(flags, F_ACTIVE_LEFT);
-    }
-  
-  } else if (bitRead(flags, F_RIGHT)) {
-    
-    // Right beam is broken only
-    if (bitRead(flags, F_ACTIVE_LEFT)) {
-      // Left beam was activate first.
-      bitClear(flags, F_ACTIVE_LEFT);
-      
-      // Send left > right message
-      createTransmitionMsg('R');
-      
-    } else {
-      // Start of activation.
-      bitSet(flags, F_ACTIVE_RIGHT);
-    }
-    
-  }
-  */
-
+ 
 }
 
 /*
@@ -457,16 +350,6 @@ void setup()
   
   // Zero all the flags.
   flags = 0;
-  /*
-  bitClear(flags, F_MOTION);
-  bitClear(flags, F_LEFT);
-  bitClear(flags, F_RIGHT);
-  bitClear(flags, F_ACTIVE_LEFT);
-  bitClear(flags, F_ACTIVE_RIGHT);
-  */
-  
-
-  //Serial.println(flags, BIN);
   
   pinMode(PIN_PIR, INPUT);
   
@@ -475,14 +358,6 @@ void setup()
   
   pinMode(PIN_DEBUG_MOTION, OUTPUT);
   
-  /*
-  // Init the message queue.
-  for (uint8_t i = 0; i <= MSG_QUEUE_LENGTH; i++) {
-      msgQueue[i] = "0";
-      msgTime[i] = 0;
-      msgTransmitted[i] = 0;
-  }
-  */
   
   vw_set_tx_pin(PIN_RF_TX);
   vw_setup(2000);      // Bits per sec
@@ -510,11 +385,10 @@ void loop()
     if (powerState == 0) {
       // Remember when the cpu woke up.
       awakeTime = millis();
+      // Ignore the first ping cycle results after wake up.
+      bitSet(flags, F_FIRST_CYCLE);
     }
 
-    // Ignore the first ping cycle results after wake up.
-    bitSet(flags, F_FIRST_CYCLE);
-    
     // Ensure the ping sensors are powered.
     powerState = 1;
     // Turn on the ping power.
@@ -534,9 +408,6 @@ void loop()
     
     // Turn off the debug light.
     digitalWrite(PIN_DEBUG_MOTION, LOW);
-    
-    // Clear the ping buffers.
-    pingBufferLeft.zero();
 
     // Zero all the flags.
     flags = 0;
@@ -574,8 +445,12 @@ void loop()
   if (nowMillis - awakeTime > powerTimeout) {
     //TODO: and not waiting for second sensor
     
-    // Powerdown at the start of the next loop
-    powerState = 0;
+    // No motion
+    if (!digitalRead(PIN_PIR)) {
+      // Powerdown at the start of the next loop
+      powerState = 0;
+    }
+
   }
   
 }
