@@ -67,7 +67,7 @@ char* msgQueue[MSG_QUEUE_LENGTH] = {"0", "0", "0"};
 unsigned long msgTime[MSG_QUEUE_LENGTH];
 byte msgTransmitted[MSG_QUEUE_LENGTH]; // Number of times the message has been transmitted.
 
-long powerTimeout = 10000;      // Time to wait in milliseconds to power down if no detection.
+long powerTimeout = 30000;      // Time to wait in milliseconds to power down if no detection.
  
 unsigned long pingTimer[SONAR_NUM]; // Holds the times when the next ping should happen for each sensor.
 unsigned int cm[SONAR_NUM];         // Where the ping distances are stored.
