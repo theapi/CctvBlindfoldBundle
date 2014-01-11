@@ -21,18 +21,18 @@
 #define PING_INTERVAL 33 // Milliseconds between sensor pings (29ms is about the min to avoid cross-sensor echo).
 
 // Flags definitions
-#define F_MOTION 1 // 1 = activated  0 = no movement
-#define F_LEFT   2 // 1 = detection  0 = no detection
-#define F_RIGHT  3 // 1 = detection  0 = no detection
-#define F_ACTIVE_LEFT   4 // 1 = detection  0 = no detection
-#define F_ACTIVE_RIGHT  5 // 1 = detection  0 = no detection
+#define F_MOTION 0 // 1 = activated  0 = no movement
+#define F_LEFT   1 // 1 = detection  0 = no detection
+#define F_RIGHT  2 // 1 = detection  0 = no detection
+#define F_ACTIVE_LEFT   3 // 1 = detection  0 = no detection
+#define F_ACTIVE_RIGHT  4 // 1 = detection  0 = no detection
 
 #define MSG_BUFFER_LEN   30    // How long the transmitted message can be.
 #define MSG_QUEUE_LENGTH 3     // How many transmission message to store.
 #define MSG_TRANSMIT_NUM 5     // How many times to transmit each message.
 #define MSG_TRANSMIT_DELAY 100 // How long to wait before sending the next message.
 
-const byte DISTANCE_THRESHOLD = 40; // Less than this (in cm) activates the detection sequence.
+const byte DISTANCE_THRESHOLD = 30; // Less than this (in cm) activates the detection sequence.
 
 // Pins
 const byte PIN_PIR = 2;         // PIR on external interupt to wake up the cpu, int.0 interupt 0 on pin 2
@@ -55,11 +55,11 @@ const byte RF_ID = 1;           // The unique id of this device, so the receive 
 
 unsigned long msgId = 0;        // Each transmission has an id so the receiver knows if it missed something.
 unsigned long lastTransmit = 0; // The last time a transmission was sent.
-char* msgQueue[MSG_QUEUE_LENGTH];
+char* msgQueue[MSG_QUEUE_LENGTH] = {"0", "0", "0"};
 unsigned long msgTime[MSG_QUEUE_LENGTH];
 byte msgTransmitted[MSG_QUEUE_LENGTH]; // Number of times the message has been transmitted.
 
-long powerTimeout = 60000;      // Time to wait in milliseconds to power down if no detection.
+long powerTimeout = 10000;      // Time to wait in milliseconds to power down if no detection.
  
 unsigned long pingTimer[SONAR_NUM]; // Holds the times when the next ping should happen for each sensor.
 unsigned int cm[SONAR_NUM];         // Where the ping distances are stored.
@@ -70,9 +70,7 @@ NewPing sonar[SONAR_NUM] = {     // Sensor object array.
   NewPing(PIN_TRIG_RIGHT, PIN_ECHO_RIGHT, MAX_DISTANCE),
 };
 
-byte flags = 0; // Booleans
-
-
+volatile byte flags; // Booleans
 
 volatile byte powerState = 0;     // 0 = ping off, 1 = ping on.
 volatile unsigned long awakeTime = 0; // When the cpu woke up.
@@ -146,29 +144,36 @@ long readVcc() {
 /**
  * Create a transmition message
  */
-void createTransmitionMsg(char *movementDirection)
+void createTransmitionMsg(char movementDirection)
 {
   msgId++;
   char buf[MSG_BUFFER_LEN];
   // Device rf id, message id, direction char, volts
   sprintf(buf, "%u,%lu,%c,%lu", RF_ID, msgId, movementDirection, readVcc());
   // TODO queue message for transmition multiple times.
-  //transmit(buf); // just send it for now.
-  msgEnqueue(buf);
+  transmit(buf); // just send it for now.
+  //msgEnqueue(buf);
 }
 
-void msgEnqueue(char *buf) 
+
+void msgEnqueue(char *msg) 
 {
   unsigned long now = millis();
   byte queued = 0;
   for (uint8_t i = 0; i < MSG_QUEUE_LENGTH; i++) {
-    if (msgQueue[i][0] == 0) { // First character is zero.
-      msgQueue[i] = buf;
+    Serial.print(i); Serial.print(" - "); //Serial.println();
+    
+    Serial.println(msgQueue[i]);
+    // MMMMmmmm they all end up the same, is the pointer pointing to the same thing????
+    if (msgQueue[i][0] == '0') { // String is just "0".
+      msgQueue[i] = msg;
       msgTime[i] = now;
-      queued = 1; // Managed to add to the queue.
+      return;
+      //queued = 1; // Managed to add to the queue.
     }
+    
   }
-  
+  /*
   if (queued == 0) {
     // Didn't get into the queue.
     byte oldestIndex = getOldestMsqQueueIndex(); 
@@ -177,7 +182,9 @@ void msgEnqueue(char *buf)
     msgQueue[oldestIndex] = buf;
     msgTime[oldestIndex] = now;
   }
+  */
 }
+
 
 byte getOldestMsqQueueIndex()
 {
@@ -185,7 +192,7 @@ byte getOldestMsqQueueIndex()
   long longestDiff = 0;
   byte oldestIndex = 0;
   // Find the oldest message.
-  for (uint8_t i = 0; i < MSG_QUEUE_LENGTH; i++) {
+  for (uint8_t i = 0; i <= MSG_QUEUE_LENGTH; i++) {
     long diff = now - msgTime[i];
     if (diff > longestDiff) {
       longestDiff = diff;
@@ -196,11 +203,12 @@ byte getOldestMsqQueueIndex()
   return oldestIndex;
 }
 
-/**
- * Send the correct message for the correct number of times.
- */
+/*
+// Send the correct message for the correct number of times.
 void processMsgQueue()
 {
+return;
+  
   if (millis() - lastTransmit > MSG_TRANSMIT_DELAY) {
     // Time to send another transmition if one is waiting.
     byte oldestIndex = getOldestMsqQueueIndex(); 
@@ -209,25 +217,28 @@ void processMsgQueue()
       // nothing to do.
       return;
     }
-
-    transmit(msgQueue[oldestIndex]);
+// NOT WORKING :( Jibberish being sent.
+    //transmit(msgQueue[oldestIndex]);
+    //Serial.println(msgQueue[oldestIndex]);
     msgTransmitted[oldestIndex]++;
     
     // If the message has been sent enough times, delete it.
     if (msgTransmitted[oldestIndex] > MSG_TRANSMIT_NUM) {
-      char buf[MSG_BUFFER_LEN] = {0};
-      msgQueue[oldestIndex] = buf;
+      //char buf[MSG_BUFFER_LEN] = {"0"};
+      msgQueue[oldestIndex] = "0";
       msgTime[oldestIndex] = 0;
       msgTransmitted[oldestIndex] = 0;
     }
   }
 }
+*/
 
 /**
  * Transmit a message.
  */
 void transmit(char *buf) 
 {
+  Serial.print("TRANSMIT: "); Serial.println(buf);
   vw_send((uint8_t *)buf, strlen(buf));
   // NB: ping returns 0 if transmitting while vw_wait_tx() so don't use it.
   //vw_wait_tx(); // Wait until the whole message is gone
@@ -250,6 +261,7 @@ void echoCheck()
  */
 void oneSensorCycle() 
 {
+  
   // The following code would be replaced with your code that does something with the ping results.
   for (uint8_t i = 0; i < SONAR_NUM; i++) {
     Serial.print(i);
@@ -259,14 +271,15 @@ void oneSensorCycle()
   }
   Serial.println();
   
+  
   // Check for activation.
-  if (cm[0] < DISTANCE_THRESHOLD) {
+  if (cm[0] > 0 && cm[0] < DISTANCE_THRESHOLD) {
     // Flag that it happend.
     bitSet(flags, F_LEFT);
   } else {
     bitClear(flags, F_LEFT);
   }
-  if (cm[1] < DISTANCE_THRESHOLD) {
+  if (cm[1] > 0 && cm[1] < DISTANCE_THRESHOLD) {
     // Flag that it happend.
     bitSet(flags, F_RIGHT);
   } else {
@@ -278,8 +291,41 @@ void oneSensorCycle()
 
 void handlePingFlags()
 {
+  Serial.print(flags, BIN); Serial.print(" - ");
+  
+  if (bitRead(flags, F_ACTIVE_RIGHT)) {
+    // Waiting for left.
+    if (bitRead(flags, F_LEFT)) {
+      
+      bitClear(flags, F_ACTIVE_LEFT);
+      bitClear(flags, F_ACTIVE_RIGHT);
+      bitClear(flags, F_RIGHT); 
+      bitClear(flags, F_LEFT); 
+      // NEDD to ignore for while to debounce ...
+      createTransmitionMsg('L');
+    }
+  } else if (bitRead(flags, F_ACTIVE_LEFT)) {
+    // Waiting for right.
+    if (bitRead(flags, F_RIGHT)) {
+      
+      bitClear(flags, F_ACTIVE_LEFT);
+      bitClear(flags, F_ACTIVE_RIGHT);
+      bitClear(flags, F_RIGHT); 
+      bitClear(flags, F_LEFT);
+      createTransmitionMsg('R');
+    }
+  } else if (bitRead(flags, F_RIGHT)) {
+    bitSet(flags, F_ACTIVE_RIGHT);
+    bitClear(flags, F_RIGHT);
+  } else if (bitRead(flags, F_LEFT)) {
+    bitSet(flags, F_ACTIVE_LEFT);
+    bitClear(flags, F_LEFT);
+  }
+  
+  Serial.println(flags, BIN);
+  
+  /*
   if (!bitRead(flags, F_LEFT) && !bitRead(flags, F_RIGHT)) {
-    
     // Waiting for activation.
     return;
     
@@ -288,7 +334,10 @@ void handlePingFlags()
     // Both beams are broken
     return;
     
-  } else if (bitRead(flags, F_LEFT)) {
+  } else 
+  */
+  /*
+  if (bitRead(flags, F_LEFT)) {
     
     // Left beam is broken only
     if (bitRead(flags, F_ACTIVE_RIGHT)) {
@@ -296,7 +345,7 @@ void handlePingFlags()
       bitClear(flags, F_ACTIVE_RIGHT);
       
       // Send left < right message
-      createTransmitionMsg("<");
+      createTransmitionMsg('L');
       
     } else {
       // Start of activation.
@@ -311,7 +360,7 @@ void handlePingFlags()
       bitClear(flags, F_ACTIVE_LEFT);
       
       // Send left > right message
-      createTransmitionMsg(">");
+      createTransmitionMsg('R');
       
     } else {
       // Start of activation.
@@ -319,6 +368,7 @@ void handlePingFlags()
     }
     
   }
+  */
 
 }
 
@@ -332,9 +382,20 @@ void isrMotion() {
 void setup() 
 {
   Serial.begin(115200);
+  Serial.println("Setup");
   
   // Zero all the flags.
   flags = 0;
+  /*
+  bitClear(flags, F_MOTION);
+  bitClear(flags, F_LEFT);
+  bitClear(flags, F_RIGHT);
+  bitClear(flags, F_ACTIVE_LEFT);
+  bitClear(flags, F_ACTIVE_RIGHT);
+  */
+  
+
+  //Serial.println(flags, BIN);
   
   pinMode(PIN_PIR, INPUT);
   
@@ -343,13 +404,14 @@ void setup()
   
   pinMode(PIN_DEBUG_MOTION, OUTPUT);
   
+  /*
   // Init the message queue.
-  for (uint8_t i = 0; i < MSG_QUEUE_LENGTH; i++) {
-      char buf[MSG_BUFFER_LEN] = {0};
-      msgQueue[i] = buf;
+  for (uint8_t i = 0; i <= MSG_QUEUE_LENGTH; i++) {
+      msgQueue[i] = "0";
       msgTime[i] = 0;
       msgTransmitted[i] = 0;
   }
+  */
   
   vw_set_tx_pin(PIN_RF_TX);
   vw_setup(2000);      // Bits per sec
@@ -358,6 +420,10 @@ void setup()
   for (uint8_t i = 1; i < SONAR_NUM; i++) // Set the starting time for each sensor.
     pingTimer[i] = pingTimer[i - 1] + PING_INTERVAL;
     
+    
+  // Wait for everything to be ready (serial send setup etc).
+  delay(100);
+  
   // Attach the external interupt to the PIR.
   attachInterrupt(0, isrMotion, RISING);
     
@@ -368,6 +434,7 @@ void loop()
   
   // The motion ISR sets a flag so we know it detected motion.
   if (bitRead(flags, F_MOTION)) {
+    Serial.println("MOTION");
     bitClear(flags, F_MOTION);
     if (powerState == 0) {
       // Remember when the cpu woke up.
@@ -425,7 +492,7 @@ void loop()
     transmit(buf); 
   }
   
-  processMsgQueue();
+  //processMsgQueue();
   
   if (nowMillis - awakeTime > powerTimeout) {
     //TODO: and not waiting for second sensor
