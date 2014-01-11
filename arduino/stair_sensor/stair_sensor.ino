@@ -52,6 +52,9 @@ const byte PIN_ECHO_RIGHT = 6;  // Listen for the right ping's echo.
 const byte PIN_DEBUG_MOTION = 13; // The PIR detected motion.
  
 const byte RF_ID = 1;           // The unique id of this device, so the receive knows where it came from.
+const long DIRECTION_DEBOUNCE_TIME = 500; // milliseconds to ignore the pings after detecting a direction.
+unsigned long lastDirectionDetected = 0; // For "debouncing" the ping.
+
 
 unsigned long msgId = 0;        // Each transmission has an id so the receiver knows if it missed something.
 unsigned long lastTransmit = 0; // The last time a transmission was sent.
@@ -291,38 +294,45 @@ void oneSensorCycle()
 
 void handlePingFlags()
 {
-  Serial.print(flags, BIN); Serial.print(" - ");
+  unsigned long now = millis();
+  if (now - lastDirectionDetected > DIRECTION_DEBOUNCE_TIME) {
   
-  if (bitRead(flags, F_ACTIVE_RIGHT)) {
-    // Waiting for left.
-    if (bitRead(flags, F_LEFT)) {
-      
-      bitClear(flags, F_ACTIVE_LEFT);
-      bitClear(flags, F_ACTIVE_RIGHT);
-      bitClear(flags, F_RIGHT); 
-      bitClear(flags, F_LEFT); 
-      // NEDD to ignore for while to debounce ...
-      createTransmitionMsg('L');
-    }
-  } else if (bitRead(flags, F_ACTIVE_LEFT)) {
-    // Waiting for right.
-    if (bitRead(flags, F_RIGHT)) {
-      
-      bitClear(flags, F_ACTIVE_LEFT);
-      bitClear(flags, F_ACTIVE_RIGHT);
-      bitClear(flags, F_RIGHT); 
+    Serial.print(flags, BIN); Serial.print(" - ");
+    
+    if (bitRead(flags, F_ACTIVE_RIGHT)) {
+      // Waiting for left.
+      if (bitRead(flags, F_LEFT)) {
+        
+        bitClear(flags, F_ACTIVE_LEFT);
+        bitClear(flags, F_ACTIVE_RIGHT);
+        bitClear(flags, F_RIGHT); 
+        bitClear(flags, F_LEFT); 
+        // Need to ignore for while to debounce ...
+        lastDirectionDetected = now;
+        createTransmitionMsg('L');
+      }
+    } else if (bitRead(flags, F_ACTIVE_LEFT)) {
+      // Waiting for right.
+      if (bitRead(flags, F_RIGHT)) {
+        
+        bitClear(flags, F_ACTIVE_LEFT);
+        bitClear(flags, F_ACTIVE_RIGHT);
+        bitClear(flags, F_RIGHT); 
+        bitClear(flags, F_LEFT);
+        // Need to ignore for while to debounce ...
+        lastDirectionDetected = now;
+        createTransmitionMsg('R');
+      }
+    } else if (bitRead(flags, F_RIGHT)) {
+      bitSet(flags, F_ACTIVE_RIGHT);
+      bitClear(flags, F_RIGHT);
+    } else if (bitRead(flags, F_LEFT)) {
+      bitSet(flags, F_ACTIVE_LEFT);
       bitClear(flags, F_LEFT);
-      createTransmitionMsg('R');
     }
-  } else if (bitRead(flags, F_RIGHT)) {
-    bitSet(flags, F_ACTIVE_RIGHT);
-    bitClear(flags, F_RIGHT);
-  } else if (bitRead(flags, F_LEFT)) {
-    bitSet(flags, F_ACTIVE_LEFT);
-    bitClear(flags, F_LEFT);
+    
+    Serial.println(flags, BIN);
   }
-  
-  Serial.println(flags, BIN);
   
   /*
   if (!bitRead(flags, F_LEFT) && !bitRead(flags, F_RIGHT)) {
