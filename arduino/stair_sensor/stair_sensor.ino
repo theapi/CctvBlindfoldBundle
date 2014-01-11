@@ -30,6 +30,7 @@
 #define F_RIGHT  2 // 1 = detection  0 = no detection
 #define F_ACTIVE_LEFT   3 // 1 = detection  0 = no detection
 #define F_ACTIVE_RIGHT  4 // 1 = detection  0 = no detection
+#define F_FIRST_CYCLE  5  // Need to ignore the first cycle after wake up as it is error prone; 1 = true  0 = false
 
 #define MSG_BUFFER_LEN   30    // How long the transmitted message can be.
 #define MSG_QUEUE_LENGTH 3     // How many transmission message to store.
@@ -72,8 +73,8 @@ unsigned long pingTimer[SONAR_NUM]; // Holds the times when the next ping should
 unsigned int cm[SONAR_NUM];         // Where the ping distances are stored.
 uint8_t currentSensor = 0;          // Keeps track of which sensor is active.
 //uint8_t pingBuffer[PING_BUFFER_SIZE];  // Keeps track of previous pings
-RingBuffer<uint8_t> pingBufferLeft(PING_BUFFER_SIZE); // Keeps track of previous pings
-RingBuffer<uint8_t> pingBufferRight(PING_BUFFER_SIZE); // Keeps track of previous pings
+RingBuffer<int> pingBufferLeft(PING_BUFFER_SIZE); // Keeps track of previous pings
+RingBuffer<int> pingBufferRight(PING_BUFFER_SIZE); // Keeps track of previous pings
 
 NewPing sonar[SONAR_NUM] = {     // Sensor object array.
   NewPing(PIN_TRIG_LEFT, PIN_ECHO_LEFT, MAX_DISTANCE), // Each sensor's trigger pin, echo pin, and max distance to ping.
@@ -272,6 +273,14 @@ void echoCheck()
  */
 void oneSensorCycle() 
 {
+  //Serial.println(clearBuffer);
+  if (bitRead(flags, F_FIRST_CYCLE)) {
+    Serial.println("FIRST CYCLE");
+    bitClear(flags, F_FIRST_CYCLE);
+    // Clear the ping buffers.
+    pingBufferLeft.zero();
+    return;
+  }
   /*
   // The following code would be replaced with your code that does something with the ping results.
   for (uint8_t i = 0; i < SONAR_NUM; i++) {
@@ -303,7 +312,16 @@ void oneSensorCycle()
   int current = pingBufferLeft.current();
   if (current == 0) {
     if (pingBufferLeft.previous(0) > 0 && pingBufferLeft.previous(1) > 0) {
+      Serial.print(pingBufferLeft.currentIndex()); Serial.print(" : ");
+  Serial.print(pingBufferLeft.peek(0)); Serial.print(" : ");
+  Serial.print(pingBufferLeft.peek(1)); Serial.print(" : ");
+  Serial.print(pingBufferLeft.peek(2)); 
+  Serial.println();
+      
       Serial.println("LEFT FELL");
+      
+      
+      
     }
   }
   
@@ -493,6 +511,9 @@ void loop()
       // Remember when the cpu woke up.
       awakeTime = millis();
     }
+
+    // Ignore the first ping cycle results after wake up.
+    bitSet(flags, F_FIRST_CYCLE);
     
     // Ensure the ping sensors are powered.
     powerState = 1;
@@ -513,6 +534,9 @@ void loop()
     
     // Turn off the debug light.
     digitalWrite(PIN_DEBUG_MOTION, LOW);
+    
+    // Clear the ping buffers.
+    pingBufferLeft.zero();
 
     // Zero all the flags.
     flags = 0;

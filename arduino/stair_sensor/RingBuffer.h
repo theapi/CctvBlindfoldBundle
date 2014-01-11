@@ -39,7 +39,8 @@ class RingBuffer {
     // get the number of items in the stack.
     int count () const;
 
-
+    // make all the values zero.
+    void zero();
 
     // set the printer of the stack.
     void setPrinter (Print & p);
@@ -75,6 +76,15 @@ RingBuffer<T>::RingBuffer (byte initialSize) {
   for (uint8_t i = 0; i < size; i++) {
     contents[i] = NULL;
   }
+}
+
+template<typename T>
+void RingBuffer<T>::zero () {
+  // fill the buffer with zeros
+  for (uint8_t i = 0; i < size; i++) {
+    contents[i] = 0;
+  }
+  top = 0;
 }
 
 // clear the stack (destructor).
