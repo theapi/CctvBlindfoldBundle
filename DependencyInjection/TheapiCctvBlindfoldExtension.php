@@ -27,6 +27,7 @@ class TheapiCctvBlindfoldExtension extends Extension
         $loader = new Loader\XmlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
         $loader->load('services.xml');
 
+        $container->setParameter('theapi_cctvblindfold.bluetooth_devices', $config['bluetooth_devices']);
         $container->setParameter('theapi_cctvblindfold.devices', $config['devices']);
         $container->setParameter('theapi_cctvblindfold.steps_open', $config['steps_open']);
         $container->setParameter('theapi_cctvblindfold.steps_close', $config['steps_close']);

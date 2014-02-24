@@ -10,6 +10,8 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
  *
  * To learn more see
  * {@link http://symfony.com/doc/current/cookbook/bundles/extension.html#cookbook-bundles-extension-config-class}
+ * and
+ * {@link http://symfony.com/doc/master/components/config/definition.html}
  */
 class Configuration implements ConfigurationInterface
 {
@@ -24,6 +26,9 @@ class Configuration implements ConfigurationInterface
 
         $rootNode
             ->children()
+                ->arrayNode('bluetooth_devices')
+                    ->prototype('scalar')->end()
+                ->end()
                 ->scalarNode('devices')->end()
                 ->scalarNode('steps_open')->defaultValue('100')->end()
                 ->scalarNode('steps_close')->defaultValue('-100')->end()

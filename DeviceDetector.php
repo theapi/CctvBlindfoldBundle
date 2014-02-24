@@ -90,8 +90,8 @@ class DeviceDetector extends ContainerAware
 
         try {
             // are the devices on the network...
-            $str = $this->scan();
-            $this->analyseScan($str);
+            $str = $this->scanWifi();
+            $this->analyseScanWifi($str);
         } catch (\Exception $e) {
             // failed to get a meaningfull result
             if (!empty($this->output)) {
@@ -152,13 +152,30 @@ class DeviceDetector extends ContainerAware
 
     }
 
+    public function scanBluetooth()
+    {
+        $this->detected = array();
+        foreach ($this->bluetooth_devices as $bt) {
+            $cmd = 'hcitool name ' . $bt;
+            $this->process->setCommandLine($cmd);
+            $this->process->run();
+            if (!$this->process->isSuccessful()) {
+                throw new \RuntimeException($this->process->getErrorOutput());
+            }
+            $output = $this->process->getOutput();
+            if (!empty($output)) {
+                $this->detected[] = $output;
+            }
+        }
+    }
+
     /**
     * Scan the network for attached devices
     *
     * @throws \RuntimeException
     * @return string
     */
-    public function scan()
+    public function scanWifi()
     {
         $cmd = 'sudo nmap -sP ' . $this->devices . ' -oX - 2>&1';
 
@@ -177,7 +194,7 @@ class DeviceDetector extends ContainerAware
     *
     * @throws Exception
     */
-    public function analyseScan($str)
+    public function analyseScanWifi($str)
     {
         $this->detected = array();
 
