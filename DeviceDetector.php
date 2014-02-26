@@ -129,7 +129,7 @@ class DeviceDetector extends ContainerAware
                 }
                 $devices = join(' ', $this->detected);
             } else {
-                $out = 'Not found: <info>' . $this->bluetooth_devices . '</info> ' . date('r');
+                $out = 'Not found: <info>' . join(', ', $this->bluetooth_devices) . '</info> ' . date('r');
                 $devices = '';
             }
             $this->output->writeln($out);
