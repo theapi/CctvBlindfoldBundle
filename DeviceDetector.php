@@ -16,6 +16,11 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class DeviceDetector extends ContainerAware
 {
+    /**
+     * The bluetooth devices to scan
+     * @var array
+     */
+    protected $bluetooth_devices;
 
     /**
     * The devices to scan
@@ -45,8 +50,9 @@ class DeviceDetector extends ContainerAware
     /**
     * Constructor
     */
-    public function __construct($devices, $process)
+    public function __construct($bluetooth_devices, $devices, $process)
     {
+        $this->bluetooth_devices = $bluetooth_devices;
         $this->devices = $devices;
         $this->process = $process;
 
@@ -90,8 +96,9 @@ class DeviceDetector extends ContainerAware
 
         try {
             // are the devices on the network...
-            $str = $this->scanWifi();
-            $this->analyseScanWifi($str);
+            //$str = $this->scanWifi();
+            //$this->analyseScanWifi($str);
+            $this->scanBluetooth();
         } catch (\Exception $e) {
             // failed to get a meaningfull result
             if (!empty($this->output)) {
@@ -152,6 +159,10 @@ class DeviceDetector extends ContainerAware
 
     }
 
+    /**
+     * Scan for named bluetooth devices
+     * @throws \RuntimeException
+     */
     public function scanBluetooth()
     {
         $this->detected = array();

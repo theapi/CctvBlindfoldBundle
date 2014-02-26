@@ -21,6 +21,7 @@
         </service>
     
         <service id="theapi_cctvblindfold.device_detector" class="%theapi_cctvblindfold.device_detector.class%">
+            <argument>%theapi_cctvblindfold.bluetooth_devices%</argument>
             <argument>%theapi_cctvblindfold.devices%</argument>
             <argument type="service" id="theapi_cctvblindfold.process" />
             <call method="setEntityManager">
