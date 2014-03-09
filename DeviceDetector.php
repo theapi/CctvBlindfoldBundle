@@ -96,9 +96,10 @@ class DeviceDetector extends ContainerAware
 
         try {
             // are the devices on the network...
-            //$str = $this->scanWifi();
-            //$this->analyseScanWifi($str);
-            $this->scanBluetooth();
+            $str = $this->scanWifi();
+            $this->analyseScanWifi($str);
+            // the bluetooth dongle disconects itself after a couple of days :(
+            //$this->scanBluetooth();
         } catch (\Exception $e) {
             // failed to get a meaningfull result
             if (!empty($this->output)) {
@@ -113,13 +114,13 @@ class DeviceDetector extends ContainerAware
             $present = false;
         }
 
-        /*
+
         if (!$present && $count < 3) {
             // repeat in a few seconds because the phones take a while to respond initially...
             sleep(10);
             return $this->detect($count + 1);
         }
-        */
+
 
         if (!empty($this->output)) {
             if ($present) {
