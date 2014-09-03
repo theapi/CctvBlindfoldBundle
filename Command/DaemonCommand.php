@@ -39,7 +39,7 @@ class DaemonCommand extends ContainerAwareCommand
             $now = time();
             //@todo configurable last detected time since.
             if ($now - $lastDetect > 120) {
-                $detectCommand->run($input, $output);
+                //$detectCommand->run($input, $output); // Disabled for now
                 $lastDetect = $now;
             }
 
