@@ -17,9 +17,23 @@ class DefaultController extends Controller
     
     public function toggleAction()
     {
+        // Restrict by ip
+        $ip = $this->getRequest()->getClientIp();
+        $access = false;
+        if ($ip == '127.0.0.1') {
+            $access = true;
+        } else {
+            $parts = explode('.', $ip);
+            if ($parts[0] == '192' && $parts[1] == '168') {
+                $access = true;
+            } 
+        }
+        
         try {
-            $blindfold = $this->get('theapi_cctvblindfold.blindfold');
-            $blindfold->toggle();
+            if ($access == true) {
+              $blindfold = $this->get('theapi_cctvblindfold.blindfold');
+              $blindfold->toggle();
+            }
         } catch (\Exception $e) {
             // ignore error
         }
