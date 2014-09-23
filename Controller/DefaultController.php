@@ -12,28 +12,20 @@ class DefaultController extends Controller
 
     public function indexAction()
     {
-        $blindfold = $this->get('theapi_cctvblindfold.blindfold');
-        $state = $blindfold->getState();
-        $word = $state ? 'CLOSE' : 'OPEN';
+        if ($this->hasAccess()) {
+            $blindfold = $this->get('theapi_cctvblindfold.blindfold');
+            $state = $blindfold->getState();
+            $word = $state ? 'CLOSE' : 'OPEN';
+        } else {
+            $word = ' '; // tell 'em nothing
+        }
         return $this->render('TheapiCctvBlindfoldBundle:Default:index.html.twig', array('word' => $word));
     }
     
     public function toggleAction()
-    {
-        // Restrict by ip
-        $ip = $this->getRequest()->getClientIp();
-        $access = false;
-        if ($ip == '127.0.0.1') {
-            $access = true;
-        } else {
-            $parts = explode('.', $ip);
-            if ($parts[0] == '192' && $parts[1] == '168') {
-                $access = true;
-            } 
-        }
-        
+    {       
         try {
-            if ($access == true) {
+            if ($this->hasAccess()) {
                 $blindfold = $this->get('theapi_cctvblindfold.blindfold');
                 $state = $blindfold->getState();
                 touch('/opt/watched/cctvbf');
@@ -52,6 +44,23 @@ class DefaultController extends Controller
         }
         
         return $this->redirect($this->generateUrl('theapi_cctvblindfold'));
+    }
+
+    public function hasAccess() 
+    {
+        // Restrict by ip
+        $ip = $this->getRequest()->getClientIp();
+        $access = false;
+        if ($ip == '127.0.0.1') {
+            $access = true;
+        } else {
+            $parts = explode('.', $ip);
+            if ($parts[0] == '192' && $parts[1] == '168') {
+                $access = true;
+            } 
+        }
+
+        return $access;
     }
 
 }
