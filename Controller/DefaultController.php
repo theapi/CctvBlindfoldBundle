@@ -31,8 +31,7 @@ class DefaultController extends Controller
         
         try {
             if ($access == true) {
-              $blindfold = $this->get('theapi_cctvblindfold.blindfold');
-              $blindfold->toggle();
+                touch('/opt/watched/cctvbf');
             }
         } catch (\Exception $e) {
             // ignore error

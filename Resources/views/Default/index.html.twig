@@ -1,15 +1,51 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.or
+g/TR/html4/loose.dtd">
+<html>
 <head>
-<meta name="robots" content="noindex,nofollow" />
-
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Toggle Cover</title>
+<link rel="shortcut icon" href="/reset_xbmc.ico">
+<style>
+input#reset{
+width:200px; /*same as the height*/
+height:200px; /*same as the width*/
+background-color:#ff0000;
+border:1px solid #ff0000; /*same colour as the background*/
+color:#fff;
+font-size:1.6em;
+/*set the border-radius at half the size of the width and height*/
+-webkit-border-radius: 100px;
+-moz-border-radius: 100px;
+border-radius: 100px;
+/*give the button a small drop shadow*/
+-webkit-box-shadow: 0 0 10px rgba(0,0,0, .75);
+-moz-box-shadow: 0 0 10px rgba(0,0,0, .75);
+box-shadow: 2px 2px 15px rgba(0,0,0, .75);
+ 
+ 
+ position: fixed;
+ top: 40%;
+ left: 50%;
+ margin-top: -100px;
+ margin-left: -100px;
+}
+ 
+input#reset:active{
+background:#c20b0b;
+border:1px solid #c20b0b;
+/*reduce the size of the shadow to give a pushed effect*/
+-webkit-box-shadow: 0px 0px 5px rgba(0,0,0, .75);
+-moz-box-shadow: 0px 0px 5px rgba(0,0,0, .75);
+box-shadow: 0px 0px 5px rgba(0,0,0, .75);
+}
+</style>
 </head>
-
 <body>
 
-<div class="button">
-<a href="toggle">Button</a>
-</div>
-
+ 
+<form action="toggle">
+<input id="reset" type="submit" value="COVER" />
+</form>
+ 
 </body>
 </html>
