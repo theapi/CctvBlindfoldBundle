@@ -12,7 +12,10 @@ class DefaultController extends Controller
 
     public function indexAction()
     {
-        return $this->render('TheapiCctvBlindfoldBundle:Default:index.html.twig');
+        $blindfold = $this->get('theapi_cctvblindfold.blindfold');
+        $state = $blindfold->getState();
+        $word = $state ? 'CLOSE' : 'OPEN';
+        return $this->render('TheapiCctvBlindfoldBundle:Default:index.html.twig', array('word' => $word));
     }
     
     public function toggleAction()
@@ -31,7 +34,18 @@ class DefaultController extends Controller
         
         try {
             if ($access == true) {
+                $blindfold = $this->get('theapi_cctvblindfold.blindfold');
+                $state = $blindfold->getState();
                 touch('/opt/watched/cctvbf');
+                // wait for the state to change
+                $count = 0;
+                while ($state == $blindfold->getState()) {
+                    ++$count;
+                    if ($count > 60) {
+                        $state = 'give up waiting';
+                    }
+                    sleep(1);
+                }
             }
         } catch (\Exception $e) {
             // ignore error
